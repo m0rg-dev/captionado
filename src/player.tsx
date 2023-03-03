@@ -16,6 +16,12 @@ export default function Player(props: { time: number, cues: CueSet, onTimeUpdate
     props.onTimeUpdate(videoRef.current.currentTime);
   }
 
+  React.useEffect(() => {
+    if (props.time != videoRef.current.currentTime) {
+      videoRef.current.currentTime = props.time;
+    }
+  })
+
   return (
     <div>
       <div id="inputs">

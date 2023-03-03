@@ -32,3 +32,27 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
 }
+
+.cue-active {
+  color: white;
+}
+
+.cue {
+  color: gray;
+  cursor: default;
+  user-select: none;
+}
+
+.playhead {
+  color: orangered;
+}
+
+.inactive-handle {
+  color: #333;
+}
+
+.cue-boundary {
+  color: lightblue;
+  cursor: grab;
+
+}
