@@ -1,6 +1,7 @@
 import * as React from "react";
+import { CueSet } from "./editor";
 
-export default function Player({ time, onTimeUpdate }: { time: number, onTimeUpdate: (newTime: number) => void }) {
+export default function Player(props: { time: number, cues: CueSet, onTimeUpdate: (newTime: number) => void }) {
   const [videoFile, setVideoFile] = React.useState(null as string);
 
   const videoRef = React.useRef(null as HTMLVideoElement);
@@ -12,7 +13,7 @@ export default function Player({ time, onTimeUpdate }: { time: number, onTimeUpd
   }
 
   function updateTime() {
-    onTimeUpdate(videoRef.current.currentTime);
+    props.onTimeUpdate(videoRef.current.currentTime);
   }
 
   return (
@@ -20,14 +21,24 @@ export default function Player({ time, onTimeUpdate }: { time: number, onTimeUpd
       <div id="inputs">
         Video: <input type="file" accept="video/*" onChange={loadVideo} />
       </div>
-      <video
-        id="player"
-        controls
-        src={videoFile}
-        ref={videoRef}
-        onTimeUpdate={updateTime}
-      ></video>
-      Playhead position: <>{time}</>
+      <div id="video-player">
+        <video
+          id="video"
+          controls
+          src={videoFile}
+          ref={videoRef}
+          onTimeUpdate={updateTime}
+        ></video>
+        <div id="caption">
+          <div id="caption-inner">
+            {props.cues.getCueAt(props.time)?.text()}
+          </div>
+        </div>
+      </div>
+      <div>
+        Current cue: {props.cues.getCueAt(props.time)?.toString()}
+      </div>
+      Playhead position: <>{props.time}</>
     </div>
   );
 }

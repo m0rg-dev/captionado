@@ -3,8 +3,29 @@ body {
   color: #eee;
 }
 
-#player {
+#video-player {
+  display: grid;
+  grid-template-columns: fit-content(100%);
+}
+
+#video {
+  grid-area: 1 / 1;
   display: block;
+  max-width: 100%;
+}
+
+#caption {
+  grid-area: 1 / 1;
+  pointer-events: none;
+}
+
+#caption-inner {
+  text-align: center;
+  background-color: black;
+  color: white;
+  position: relative;
+  top: 80%;
+  font-size: 250%;
 }
 
 #container {
