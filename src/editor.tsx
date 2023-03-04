@@ -304,11 +304,11 @@ function CueElement(props: { time: number, cue: Cue, onTimeUpdate: (relative: nu
   for (const i in props.cue.words) {
     const index = Number.parseInt(i);
     let separator;
-    if (index < props.cue.words.length - 1) {
+    if (index > 0) {
       if (within_word !== undefined && index == within_word) {
-        separator = <span className="handle playhead">| </span>
+        separator = <span className="handle playhead"> |</span>
       } else {
-        separator = <span className="handle inactive-handle">| </span>;
+        separator = <span className="handle inactive-handle"> |</span>;
       }
     }
 
@@ -316,14 +316,14 @@ function CueElement(props: { time: number, cue: Cue, onTimeUpdate: (relative: nu
       onClick={(e) => clickInactive(e, index)}
       onDragOver={dragHandle}
       onDrop={(e) => dropHandle(e, index)}
-    >{props.cue.words[index]} {separator}</span>);
+    >{separator} {props.cue.words[index]}</span>);
   }
 
   return <div className={props.cue.isActive(props.time) ? "cue cue-active" : "cue"}>
     {props.cue.startTime.toFixed(3)} -&gt; {props.cue.endTime.toFixed(3)}
-    <span className="handle cue-boundary" onDragStart={dragStart} draggable="true" onClick={clickStart}> | </span>
+    <span className="handle cue-boundary" onDragStart={dragStart} draggable="true" onClick={clickStart}> |</span>
     {elements}
-    <span className="handle cue-boundary" onDragStart={dragStop} draggable="true" onClick={clickStop}>|</span>
+    <span className="handle cue-boundary" onDragStart={dragStop} draggable="true" onClick={clickStop}> |</span>
   </div>
 }
 
