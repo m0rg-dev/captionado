@@ -123,21 +123,45 @@ export class CueSet {
       let from_cue = this.cues.findIndex((cue) => cue.id == event.from_id);
       let to_cue = this.cues.findIndex((cue) => cue.id == event.to_id);
 
+      if (event.edge == "start" && to_cue > from_cue) {
+        return false;
+      }
+
+      if (event.edge == "end" && from_cue > to_cue) {
+        return false;
+      }
+
       console.debug(`move ${event.edge} from ${from_cue} to ${to_cue} ${event.to_index}`);
+
+      let join_start = Math.min(from_cue, to_cue);
+      let join_end = Math.max(from_cue, to_cue);
 
       console.debug(`  split ${to_cue} ${event.to_index}`);
       this.edit({ type: "split", id: this.cues[to_cue].id, index: event.to_index });
 
-      if (event.edge == "end" && from_cue >= to_cue) {
-        from_cue++;
+      // adjust join range based on inputs.
+      //
+      // this logic was determined empirically. I believe it has to do with
+      // annoying fencepost stuff because we're always joining on "end" but the
+      // move edit could go either way, but it's not very intuitive.
+      if (from_cue > to_cue) {
+        join_start++;
+        join_end++;
+      } else if (event.edge == "end" && from_cue == to_cue) {
+        join_start++;
+        join_end += 2;
+      } else {
+        join_start--;
       }
 
-      if (event.edge == "start" && to_cue < from_cue) {
-        from_cue++;
+      console.debug(`  join from ${join_start} to ${join_end}`);
+
+      for (let i = join_end - 1; i >= join_start; i--) {
+        if (i < 0) continue;
+        console.debug(`    join ${i} >`);
+        this.edit({ type: "join", id: this.cues[i].id, edge: "end" });
       }
 
-      console.debug(`  join ${from_cue} ${event.edge}`);
-      this.edit({ type: "join", id: this.cues[from_cue].id, edge: event.edge });
     } else if (event.type == "join") {
       let cue_index = this.cues.findIndex((cue) => cue.id == event.id);
 

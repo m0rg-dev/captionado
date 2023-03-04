@@ -136,6 +136,47 @@ describe('move edit', () => {
       checkCue(set.cues[1], 0.5, 2, "bar", "baz");
     });
 
+    test('move start point backward (two cues)', () => {
+      const set = new CueSet();
+
+      //                                   v to
+      set.addCue(new Cue("0", 0, 1, ["foo", "bar"]));
+      set.addCue(new Cue("1", 1, 2, ["baz"]));
+      //                       from v
+      set.addCue(new Cue("2", 2, 3, ["qux"]));
+
+      expect(set.edit({ type: "move", edge: "start", from_id: "2", to_id: "0", to_index: 1 })).toBe(true);
+
+      expect(set.cues).toHaveLength(2);
+      checkCue(set.cues[0], 0, 0.5, "foo");
+      checkCue(set.cues[1], 0.5, 3, "bar", "baz", "qux");
+    });
+
+    test('move start point backward (ten cues)', () => {
+      const set = new CueSet();
+
+      //                                   v to
+      set.addCue(new Cue("0", 0, 1, ["foo", "bar"]));
+      set.addCue(new Cue("1", 1, 2, ["one"]));
+      set.addCue(new Cue("2", 2, 3, ["two"]));
+      set.addCue(new Cue("3", 3, 4, ["three"]));
+      set.addCue(new Cue("4", 4, 5, ["four"]));
+      set.addCue(new Cue("5", 5, 6, ["five"]));
+      set.addCue(new Cue("6", 6, 7, ["six"]));
+      set.addCue(new Cue("7", 7, 8, ["seven"]));
+      set.addCue(new Cue("8", 8, 9, ["eight"]));
+      set.addCue(new Cue("9", 9, 10, ["nine"]));
+      //                          from v
+      set.addCue(new Cue("10", 10, 11, ["qux"]));
+
+      expect(set.edit({ type: "move", edge: "start", from_id: "10", to_id: "0", to_index: 1 })).toBe(true);
+
+      expect(set.cues).toHaveLength(2);
+      checkCue(set.cues[0], 0, 0.5, "foo");
+      checkCue(set.cues[1], 0.5, 11, "bar", "one", "two", "three", "four",
+        "five", "six", "seven", "eight", "nine", "qux");
+    });
+
     test('move end point backward', () => {
       const set = new CueSet();
       //                                to v     v from
@@ -177,6 +218,78 @@ describe('move edit', () => {
       expect(set.cues).toHaveLength(2);
       checkCue(set.cues[0], 0, 1.5, "foo", "bar");
       checkCue(set.cues[1], 1.5, 2, "baz");
+    });
+
+    test('move end point forward (two cues)', () => {
+      const set = new CueSet();
+
+      //                                  v from
+      set.addCue(new Cue("0", 0, 1, ["foo"]));
+      set.addCue(new Cue("1", 1, 2, ["bar"]));
+      //                                to v
+      set.addCue(new Cue("2", 2, 3, ["baz", "qux"]));
+
+      expect(set.edit({ type: "move", edge: "end", from_id: "0", to_id: "2", to_index: 1 })).toBe(true);
+
+      expect(set.cues).toHaveLength(2);
+      checkCue(set.cues[0], 0, 2.5, "foo", "bar", "baz");
+      checkCue(set.cues[1], 2.5, 3, "qux");
+    });
+
+    test('move end point forward (ten cues)', () => {
+      const set = new CueSet();
+
+      //                                  v from
+      set.addCue(new Cue("0", 0, 1, ["foo"]));
+      set.addCue(new Cue("1", 1, 2, ["one"]));
+      set.addCue(new Cue("2", 2, 3, ["two"]));
+      set.addCue(new Cue("3", 3, 4, ["three"]));
+      set.addCue(new Cue("4", 4, 5, ["four"]));
+      set.addCue(new Cue("5", 5, 6, ["five"]));
+      set.addCue(new Cue("6", 6, 7, ["six"]));
+      set.addCue(new Cue("7", 7, 8, ["seven"]));
+      set.addCue(new Cue("8", 8, 9, ["eight"]));
+      set.addCue(new Cue("9", 9, 10, ["nine"]));
+      //                                   to v
+      set.addCue(new Cue("10", 10, 11, ["bar", "baz"]));
+
+      expect(set.edit({ type: "move", edge: "end", from_id: "0", to_id: "10", to_index: 1 })).toBe(true);
+
+      expect(set.cues).toHaveLength(2);
+      checkCue(set.cues[0], 0, 10.5, "foo", "one", "two", "three", "four",
+        "five", "six", "seven", "eight", "nine", "bar");
+      checkCue(set.cues[1], 10.5, 11, "baz");
+    });
+  });
+
+  describe('no-effect cases', () => {
+    test('move start point too far forward', () => {
+      const set = new CueSet();
+
+      //                            v from
+      set.addCue(new Cue("0", 0, 1, ["foo"]));
+      //                                   v to
+      set.addCue(new Cue("1", 1, 2, ["bar", "baz"]));
+
+      expect(set.edit({ type: "move", edge: "start", from_id: "0", to_id: "1", to_index: 1 })).toBe(false);
+
+      expect(set.cues).toHaveLength(2);
+      checkCue(set.cues[0], 0, 1, "foo");
+      checkCue(set.cues[1], 1, 2, "bar", "baz");
+    });
+
+    test('move end point too far backward', () => {
+      const set = new CueSet();
+      //                                to v
+      set.addCue(new Cue("0", 0, 1, ["foo", "bar"]));
+      //                                  v from
+      set.addCue(new Cue("1", 1, 2, ["baz"]));
+
+      expect(set.edit({ type: "move", edge: "end", from_id: "1", to_id: "0", to_index: 1 })).toBe(false);
+
+      expect(set.cues).toHaveLength(2);
+      checkCue(set.cues[0], 0, 1, "foo", "bar");
+      checkCue(set.cues[1], 1, 2, "baz");
     });
   });
 });
