@@ -1,4 +1,4 @@
-import { Cue, CueSet } from "./editor";
+import { Cue, CueSet } from "./cue_set";
 
 function checkCue(cue: Cue, start: number, end: number, ...words: string[]) {
   expect(cue.words).toEqual(words);

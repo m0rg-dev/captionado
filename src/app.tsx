@@ -1,5 +1,6 @@
 import * as React from "react";
-import Editor, { CueSet, EditEvent } from "./editor";
+import { CueSet, EditEvent } from "./cue_set";
+import Editor from "./editor";
 import Player from "./player";
 
 export default function App() {
