@@ -96,19 +96,29 @@ function CueElement(props: { time: number, cue: Cue, onTimeUpdate: (relative: nu
     > {separator} {props.cue.words[index]} </span>);
   }
 
-  return <div className={props.cue.isActive(props.time) ? "cue cue-active" : "cue"}>
-    {props.cue.startTime.toFixed(3)} -& gt; {props.cue.endTime.toFixed(3)}
-    <span className="handle cue-boundary" onDragStart={dragStart} draggable="true" onClick={clickStart} > | </span>
-    {elements}
-    <span className="handle cue-boundary" onDragStart={dragStop} draggable="true" onClick={clickStop} > | </span>
-  </div>
+  return <tr className={props.cue.isActive(props.time) ? "cue cue-active" : "cue"}>
+    <td>{props.cue.startTime.toFixed(3)}</td>
+    <td>{props.cue.endTime.toFixed(3)}</td>
+    <td>{(props.cue.total_characters / props.cue.duration()).toFixed(1)}</td>
+    <td>
+      <span className="handle cue-boundary" onDragStart={dragStart} draggable="true" onClick={clickStart} > | </span>
+      {elements}
+      <span className="handle cue-boundary" onDragStart={dragStop} draggable="true" onClick={clickStop} > | </span>
+    </td>
+  </tr>
 }
 
 
 function CueList(props: { time: number, cues: CueSet, onTimeUpdate: (time: number) => void, onEdit: (event: EditEvent) => void }) {
-  return <div> {
-    props.cues?.getCues().map((cue) => <CueElement cue={cue} time={props.time} onTimeUpdate={(time) => props.onTimeUpdate(cue.startTime + time)} onEdit={props.onEdit} />)
-  }</div>;
+  return <table>
+    <tr>
+      <th>start</th>
+      <th>end</th>
+      <th>cps</th>
+      <th>content</th>
+    </tr>
+    {props.cues?.getCues().map((cue) => <CueElement cue={cue} time={props.time} onTimeUpdate={(time) => props.onTimeUpdate(cue.startTime + time)} onEdit={props.onEdit} />)}
+  </table>;
 }
 
 function parseTimecode(tc: string): number {

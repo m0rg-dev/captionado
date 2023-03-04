@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CueSet } from "./editor";
+import { CueSet } from "./cue_set";
 
 export default function Player(props: { time: number, cues: CueSet, onTimeUpdate: (newTime: number) => void }) {
   const [videoFile, setVideoFile] = React.useState(null as string);
