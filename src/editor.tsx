@@ -3,19 +3,28 @@ import { v4 as uuidv4 } from 'uuid';
 
 export type EditEvent = {
   type: "move",
-  edge: string,
+  edge: "start" | "end",
   from_id: string,
   to_id: string,
   to_index: number,
 } | {
   type: "join",
-  edge: string,
+  edge: "start" | "end",
   id: string,
 } | {
   type: "split",
   id: string,
   index: number,
 };
+
+// Index mechanics:
+//
+// Cue 0 has words like this: ["foo", "bar", "baz"]
+//
+// Cue 0, index 0 is before "foo", index 1 is before "bar", index 2 is before
+// "baz", index 3 is after "baz".
+//
+// Cue 1, index 0 is identical to cue 0, index 3.
 
 export class Cue {
   id: string;
@@ -27,11 +36,11 @@ export class Cue {
   characters_words: number[];
   words_characters: number[];
 
-  public constructor(id: string, startTime: number, endTime: number, contents: string) {
+  public constructor(id: string, startTime: number, endTime: number, contents: string[]) {
     this.id = id;
     this.startTime = startTime;
     this.endTime = endTime;
-    this.words = contents.split(/\s/);
+    this.words = contents;
     this.total_characters = this.words.map((word) => word.length).reduce((a, b) => a + b);
 
     this.characters_words = [];
@@ -45,7 +54,7 @@ export class Cue {
       this.characters_words[i] = current_word;
 
       if (chars_this_word >= this.words[current_word].length) {
-        this.words_characters[current_word] = chars_all_words - 1;
+        this.words_characters[current_word] = chars_all_words;
         current_word++;
         chars_this_word = 0;
       }
@@ -69,8 +78,16 @@ export class Cue {
   }
 
   public timeForIndex(index: number): number {
-    const character = this.words_characters[index];
+    if (index == 0) {
+      return 0;
+    }
+
+    const character = this.words_characters[index - 1];
     return (character / this.total_characters) * this.duration() + this.startTime;
+  }
+
+  public getWords(): readonly string[] {
+    return this.words
   }
 }
 
@@ -101,143 +118,46 @@ export class CueSet {
     return this.cues.filter((cue) => cue.isActive(time))[0]
   }
 
-  public edit(event: EditEvent) {
-    console.log(event);
-
+  public edit(event: EditEvent): boolean {
     if (event.type == "move") {
       let from_cue = this.cues.findIndex((cue) => cue.id == event.from_id);
       let to_cue = this.cues.findIndex((cue) => cue.id == event.to_id);
 
-      const to_index = event.to_index + 1; // TODO
-      let from_index;
+      console.debug(`move ${event.edge} from ${from_cue} to ${to_cue} ${event.to_index}`);
 
-      if (event.edge == "start") {
-        if (to_cue > from_cue) {
-          console.warn("attempted to move cue start before cue end!");
-        }
-        from_index = 0;
-      } else if (event.edge == "stop") {
-        if (to_cue < from_cue) {
-          console.warn("attempted to move cue end before cue start!");
-          return;
-        }
-        from_index = this.cues[from_cue].words.length - 1;
-      } else {
-        throw new Error(`unknown event type ${event.edge}`);
+      console.debug(`  split ${to_cue} ${event.to_index}`);
+      this.edit({ type: "split", id: this.cues[to_cue].id, index: event.to_index });
+
+      if (event.edge == "end" && from_cue >= to_cue) {
+        from_cue++;
       }
 
-      console.log(`from: cue ${from_cue} index ${from_index}`);
-      console.log(`to: cue ${to_cue} index ${to_index}`);
-
-      // 4 cases: end forward, end backward, start forward, start backward 
-      // let's just handle them separately for now and combine where possible
-      if (event.edge == "start") {
-        if (from_cue == to_cue) {
-          // We're moving the start to somewhere within the same cue. That means
-          // this is the "start forward" case - we know it's forward, because if
-          // it wasn't, we'd have moved into a different cue. We also can't move
-          // the start point past the end point, so this is the only "start
-          // forward" edit possible.
-
-          // In this case, what we'll need to do is take everything from the start
-          // of the cue through to `to_index` and move it to the previous cue.
-
-          const add_to_previous = this.cues[from_cue].words.slice(0, to_index);
-          const keep = this.cues[from_cue].words.slice(to_index);
-
-          console.log(add_to_previous);
-          console.log(keep);
-
-          const point = this.cues[from_cue].timeForIndex(to_index);
-
-          // Also, if there's *no* previous cue, we'll have to add one.
-          if (from_cue == 0) {
-            this.cues.unshift(new Cue(uuidv4(), this.cues[from_cue].startTime, point, add_to_previous.join(" ")));
-            // That will move our indices around, so we'll adjust to_cue.
-            to_cue++;
-          } else {
-            this.cues[from_cue - 1] = new Cue(
-              uuidv4(),
-              this.cues[from_cue - 1].startTime,
-              point,
-              this.cues[from_cue - 1].words.concat(...add_to_previous).join(" ")
-            );
-          }
-
-          // And now we can replace this cue, which will always exist. We make
-          // sure to use `to_cue` here since it may have changed if this was cue
-          // 0.
-          this.cues[to_cue] = new Cue(uuidv4(), point, this.cues[to_cue].endTime, keep.join(" "));
-        } else {
-          // We're moving the start to somewhere in a different cue. Since we
-          // error out if we're trying to move the start to a later cue, we know
-          // this is going to an earlier cue - the "start backward" case.
-
-          // To handle this, we need to split everything from `to_index` forwards
-          // off and add it to the start of `from_cue`. Also, if `to_cue` isn't
-          // the cue immediately before `from_cue`, we'll have to coalesce some
-          // complete cues into `from_cue` as well.
-
-          // First, we'll get a list of all the cues that will have text removed:
-
-          const removed_cues = this.cues.slice(to_cue, from_cue);
-
-          console.log(removed_cues);
-
-          // The first cue will be partially modified, and the rest will be
-          // dropped entirely. Since we'll be indexing from the first cue, we can
-          // actually combine the contents of all the cues now and deal with it
-          // like if `to_cue` was just really long.
-
-          const preceding_contents = removed_cues.flatMap((cue) => cue.words);
-          const first = preceding_contents.slice(0, to_index);
-          const rest = preceding_contents.slice(to_index);
-
-          // We'll also adjust from_cue to match. We'll be putting one cue back in,
-          // so we'll decrease from_cue by removed_cues.length - 1.
-
-          from_cue -= removed_cues.length - 1;
-
-          const point = this.cues[to_cue].timeForIndex(to_index);
-
-          this.cues.splice(to_cue, removed_cues.length, new Cue(
-            uuidv4(),
-            this.cues[to_cue].startTime,
-            point,
-            first.join(" ")
-          ));
-
-          this.cues[from_cue] = new Cue(
-            uuidv4(),
-            point,
-            this.cues[from_cue].endTime,
-            rest.concat(this.cues[from_cue].words).join(" ")
-          );
-        }
-      } else {
-        // Well, this is really just doing the same thing as the same motion on
-        // the next cue's "start" would do.
-
-        // Let's just do that!
-        this.edit({
-          ...event,
-          edge: "start",
-          from_id: this.cues[from_cue].id,
-        });
+      if (event.edge == "start" && to_cue < from_cue) {
+        from_cue++;
       }
+
+      console.debug(`  join ${from_cue} ${event.edge}`);
+      this.edit({ type: "join", id: this.cues[from_cue].id, edge: event.edge });
     } else if (event.type == "join") {
       let cue_index = this.cues.findIndex((cue) => cue.id == event.id);
 
-
       if (event.edge == "start") {
+        if (cue_index == 0) {
+          return false;
+        }
+
         const contents = this.cues[cue_index - 1].words.concat(this.cues[cue_index].words);
         this.cues.splice(cue_index - 1, 2, new Cue(
           uuidv4(),
           this.cues[cue_index - 1].startTime,
           this.cues[cue_index].endTime,
-          contents.join(" ")
+          contents
         ));
       } else {
+        if (cue_index >= this.cues.length - 1) {
+          return false;
+        }
+
         this.edit({
           ...event,
           edge: "start",
@@ -247,24 +167,28 @@ export class CueSet {
     } else if (event.type == "split") {
       const cue_index = this.cues.findIndex((cue) => cue.id == event.id);
 
-      const split_index = event.index + 1; // TODO 
+      if (event.index == 0 || event.index >= this.cues[cue_index].words.length) {
+        return false;
+      }
 
-      const first = this.cues[cue_index].words.slice(0, split_index);
-      const rest = this.cues[cue_index].words.slice(split_index);
-      const point = this.cues[cue_index].timeForIndex(split_index);
+      const first = this.cues[cue_index].words.slice(0, event.index);
+      const rest = this.cues[cue_index].words.slice(event.index);
+      const point = this.cues[cue_index].timeForIndex(event.index);
 
       this.cues.splice(cue_index, 1, new Cue(
         uuidv4(),
         this.cues[cue_index].startTime,
         point,
-        first.join(" ")
+        first
       ), new Cue(
         uuidv4(),
         point,
         this.cues[cue_index].endTime,
-        rest.join(" ")
+        rest
       ));
     }
+
+    return true;
   }
 }
 
@@ -314,7 +238,7 @@ function CueElement(props: { time: number, cue: Cue, onTimeUpdate: (relative: nu
     if (e.shiftKey) {
       props.onEdit({
         type: "join",
-        edge: "stop",
+        edge: "end",
         id: props.cue.id
       });
     }
@@ -325,7 +249,7 @@ function CueElement(props: { time: number, cue: Cue, onTimeUpdate: (relative: nu
   }
 
   function dragStop(e: React.DragEvent) {
-    e.dataTransfer.setData("application/x-cue", JSON.stringify({ type: "move", edge: "stop", from_id: props.cue.id } as EditEvent));
+    e.dataTransfer.setData("application/x-cue", JSON.stringify({ type: "move", edge: "end", from_id: props.cue.id } as EditEvent));
   }
 
   function clickInactive(e: React.MouseEvent, index: number) {
@@ -419,7 +343,7 @@ export default function Editor(props: { time: number, cues: CueSet, onCueUpdate:
 
         console.log(`start: ${startTC} end: ${endTC} cue: ${rest}`);
 
-        cueList.addCue(new Cue(uuidv4(), startTC, endTC, rest));
+        cueList.addCue(new Cue(uuidv4(), startTC, endTC, rest.split(/\s+/)));
       } else {
         // TODO: bad chunk
       }
