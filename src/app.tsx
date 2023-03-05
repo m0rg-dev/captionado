@@ -37,10 +37,6 @@ export default function App() {
 
   function handleEdit(event: EditEvent) {
     setHistory(h => {
-      console.log({
-        history,
-        historyPosition
-      });
       const newCues = history[historyPosition].clone();
       const success = newCues.edit(event);
 
@@ -57,11 +53,9 @@ export default function App() {
 
   function undo() {
     setHistoryPosition(p => {
-      console.log(`undo ${p}`);
       if (p > 0) {
         return p - 1;
       } else {
-        console.log("(suppressed)");
         return p;
       }
     })
@@ -69,11 +63,9 @@ export default function App() {
 
   function redo() {
     setHistoryPosition(p => {
-      console.log(`redo ${p}`);
       if (p < history.length - 1) {
         return p + 1;
       } else {
-        console.log("(suppressed)");
         return p;
       }
     });
@@ -143,6 +135,10 @@ export default function App() {
     document.body.removeChild(elem);
   }
 
+  function reflow() {
+    handleEdit({ type: "reflow" });
+  }
+
   return (
     <div id="container">
       <div>
@@ -165,7 +161,10 @@ export default function App() {
           Video: <input type="file" accept="video/*" onChange={loadVideo} /><br />
           Captions: <input type="file" accept="text/vtt" onChange={loadTitles} /> <button onClick={download}>Download</button><br />
           Audio: <input type="file" accept="audio/*" onChange={loadWaveform} /><br />
-          <button onClick={undo} disabled={historyPosition == 0}>Undo</button> <button onClick={redo} disabled={historyPosition >= history.length - 1}>Redo</button>
+          <button onClick={undo} disabled={historyPosition == 0}>Undo</button>
+          <button onClick={redo} disabled={historyPosition >= history.length - 1}>Redo</button>
+          |
+          <button onClick={reflow}>Reflow</button>
         </div>
         <Editor time={time.current} cues={history[historyPosition]} onTimeUpdate={setPlayhead} onEdit={handleEdit} />
       </div>

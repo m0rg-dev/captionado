@@ -1,6 +1,8 @@
 import { v4 as uuidv4 } from 'uuid';
 import { vtt_timestamp } from './utils';
 
+const REFLOW_MIN_SENTENCE_LENGTH = 5;
+
 export type EditEvent = {
   type: "move",
   edge: "start" | "end",
@@ -27,6 +29,8 @@ export type EditEvent = {
 } | {
   type: "gap",
   id: string,
+} | {
+  type: "reflow"
 };
 
 // Index mechanics:
@@ -144,7 +148,7 @@ export class CueSet {
     return this.cues.filter((cue) => cue.isActive(time))[0]
   }
 
-  public edit(event: EditEvent): boolean {
+  public edit(event: EditEvent, _keep_second_id_hack = false): boolean {
     if (event.type == "move") {
       let from_cue = this.cues.findIndex((cue) => cue.id == event.from_id);
       let to_cue = this.cues.findIndex((cue) => cue.id == event.to_id);
@@ -192,7 +196,7 @@ export class CueSet {
 
         const contents = this.cues[cue_index - 1].words.concat(this.cues[cue_index].words);
         this.cues.splice(cue_index - 1, 2, new Cue(
-          uuidv4(),
+          _keep_second_id_hack ? this.cues[cue_index].id : uuidv4(),
           this.cues[cue_index - 1].startTime,
           this.cues[cue_index].endTime,
           contents
@@ -206,7 +210,7 @@ export class CueSet {
           ...event,
           edge: "start",
           id: this.cues[cue_index + 1].id,
-        });
+        }, _keep_second_id_hack);
       }
     } else if (event.type == "split") {
       const cue_index = this.cues.findIndex((cue) => cue.id == event.id);
@@ -225,7 +229,7 @@ export class CueSet {
         point,
         first
       ), new Cue(
-        uuidv4(),
+        _keep_second_id_hack ? event.id : uuidv4(),
         point,
         this.cues[cue_index].endTime,
         rest
@@ -262,6 +266,57 @@ export class CueSet {
 
       // reroll the ID on the edited region so the waveform display picks it up
       this.cues[cue_index].id = uuidv4();
+    } else if (event.type == "reflow") {
+      // Reflow based on sentence breaks.
+
+      // Pass 1: Split on all the sentence breaks.
+      let edits: EditEvent[] = [];
+      for (const cue of this.cues) {
+        let offset = 0;
+        for (const index in cue.words) {
+          if (cue.words[index].match(/[.!?]$/)) {
+            const split_index = Number.parseInt(index) + 1 - offset;
+            edits.push({ type: "split", id: cue.id, index: split_index });
+            offset = Number.parseInt(index) + 1;
+          }
+        }
+      }
+
+      for (const edit of edits) {
+        this.edit(edit, true);
+      }
+
+      // Pass 2: Join on all the non-sentence breaks.
+      edits = [];
+
+      for (const cue of this.cues) {
+        if (cue.words.length && cue.words[cue.words.length - 1].match(/[^.!?]$/)) {
+          edits.push({ type: "join", id: cue.id, edge: "end" });
+        }
+      }
+
+      for (const edit of edits) {
+        this.edit(edit, true);
+      }
+
+      // Pass 3: Join on all the short sentences.
+      edits = [];
+
+      for (const cue of this.cues) {
+        if (cue.words.length < REFLOW_MIN_SENTENCE_LENGTH) {
+          edits.push({ type: "join", id: cue.id, edge: "end" });
+        }
+      }
+
+      for (const edit of edits) {
+        this.edit(edit, true);
+      }
+
+
+      // Reroll all the cue IDs so the UI updates.
+      for (const cue of this.cues) {
+        cue.id = uuidv4();
+      }
     }
 
     return true;
