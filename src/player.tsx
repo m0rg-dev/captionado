@@ -1,14 +1,17 @@
 import * as React from "react";
 import { CueSet } from "./cue_set";
 
-export default function Player(props: { time: number, cues: CueSet, onTimeUpdate: (newTime: number) => void }) {
+export default function Player(props: {
+  time: number,
+  cues: CueSet,
+  onTimeUpdate: (newTime: number) => void,
+}) {
   const [videoFile, setVideoFile] = React.useState(null as string);
 
   const videoRef = React.useRef(null as HTMLVideoElement);
 
   function loadVideo(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.currentTarget.files[0];
-    console.log(file);
     setVideoFile(URL.createObjectURL(file));
   }
 
@@ -18,7 +21,7 @@ export default function Player(props: { time: number, cues: CueSet, onTimeUpdate
 
   React.useEffect(() => {
     if (props.time != videoRef.current.currentTime) {
-      videoRef.current.currentTime = props.time;
+      videoRef.current.fastSeek(props.time);
     }
   })
 

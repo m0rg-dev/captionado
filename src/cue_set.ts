@@ -14,6 +14,10 @@ export type EditEvent = {
   type: "split",
   id: string,
   index: number,
+} | {
+  type: "set_contents",
+  id: string,
+  contents: string[],
 };
 
 // Index mechanics:
@@ -208,6 +212,15 @@ export class CueSet {
         point,
         this.cues[cue_index].endTime,
         rest
+      ));
+    } else if (event.type == "set_contents") {
+      const cue_index = this.cues.findIndex((cue) => cue.id == event.id);
+
+      this.cues.splice(cue_index, 1, new Cue(
+        this.cues[cue_index].id,
+        this.cues[cue_index].startTime,
+        this.cues[cue_index].endTime,
+        event.contents
       ));
     }
 

@@ -13,6 +13,7 @@ body {
   grid-area: 1 / 1;
   display: block;
   max-width: 100%;
+  max-height: 60vh;
 }
 
 #caption {
@@ -56,4 +57,9 @@ body {
   color: lightblue;
   cursor: grab;
 
+}
+
+#cue-textarea {
+  width: 90%;
+  resize: none;
 }
