@@ -63,3 +63,7 @@ body {
   width: 90%;
   resize: none;
 }
+
+#waveform {
+  width: 90%;
+}

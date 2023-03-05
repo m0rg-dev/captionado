@@ -18,6 +18,11 @@ export type EditEvent = {
   type: "set_contents",
   id: string,
   contents: string[],
+} | {
+  type: "retime",
+  id: string,
+  start: number,
+  end: number
 };
 
 // Index mechanics:
@@ -44,7 +49,7 @@ export class Cue {
     this.startTime = startTime;
     this.endTime = endTime;
     this.words = contents;
-    this.total_characters = this.words.map((word) => word.length).reduce((a, b) => a + b);
+    this.total_characters = this.words.map((word) => word.length).reduce((a, b) => a + b, 0);
 
     this.characters_words = [];
     this.words_characters = [];
@@ -222,6 +227,14 @@ export class CueSet {
         this.cues[cue_index].endTime,
         event.contents
       ));
+    } else if (event.type == "retime") {
+      const cue_index = this.cues.findIndex((cue) => cue.id == event.id);
+
+      this.cues[cue_index].startTime = event.start;
+      this.cues[cue_index].endTime = event.end;
+
+      if (this.cues[cue_index - 1]) this.cues[cue_index - 1].endTime = event.start;
+      if (this.cues[cue_index + 1]) this.cues[cue_index + 1].startTime = event.end;
     }
 
     return true;

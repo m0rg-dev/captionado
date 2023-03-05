@@ -1,29 +1,42 @@
 import * as React from "react";
+import { TimeInfo } from "./app";
 import { CueSet } from "./cue_set";
 
 export default function Player(props: {
-  time: number,
+  time: TimeInfo,
   cues: CueSet,
-  onTimeUpdate: (newTime: number) => void,
+  onTimeUpdate: (time: TimeInfo) => void,
 }) {
-  const [videoFile, setVideoFile] = React.useState(null as string);
+  const [videoFile, setVideoFile] = React.useState<string | undefined>(undefined);
 
-  const videoRef = React.useRef(null as HTMLVideoElement);
+  const videoRef = React.useRef<HTMLVideoElement | null>(null);
 
   function loadVideo(event: React.ChangeEvent<HTMLInputElement>) {
+    if (event.currentTarget.files === null) {
+      return;
+    }
+
     const file = event.currentTarget.files[0];
     setVideoFile(URL.createObjectURL(file));
   }
 
   function updateTime() {
-    console.log(`updateTime ${videoRef.current.currentTime}`);
-    props.onTimeUpdate(videoRef.current.currentTime);
+    console.log(`updateTime ${videoRef.current?.currentTime}`);
+    if (videoRef.current) {
+      props.onTimeUpdate({ current: videoRef.current.currentTime, maximum: props.time.maximum });
+    }
+  }
+
+  function updateMaxTime() {
+    if (videoRef.current) {
+      props.onTimeUpdate({ current: videoRef.current.currentTime, maximum: videoRef.current.duration });
+    }
   }
 
   React.useEffect(() => {
-    if (Math.abs(props.time - videoRef.current.currentTime) > 0.1) {
+    if (videoRef.current && Math.abs(props.time.current - videoRef.current.currentTime) > 0.1) {
       console.log(`seek ${props.time} ${videoRef.current.currentTime}`);
-      videoRef.current.currentTime = props.time;
+      videoRef.current.currentTime = props.time.current;
     }
   })
 
@@ -39,17 +52,18 @@ export default function Player(props: {
           src={videoFile}
           ref={videoRef}
           onTimeUpdate={updateTime}
+          onCanPlay={updateMaxTime}
         ></video>
         <div id="caption">
           <div id="caption-inner">
-            {props.cues.getCueAt(props.time)?.text()}
+            {props.cues.getCueAt(props.time.current)?.text()}
           </div>
         </div>
       </div>
       <div>
-        Current cue: {props.cues.getCueAt(props.time)?.toString()}
+        Current cue: {props.cues.getCueAt(props.time.current)?.toString()}
       </div>
-      Playhead position: <>{props.time}</>
+      Playhead position: <>{props.time.current}</>
     </div>
   );
 }

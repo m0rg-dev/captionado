@@ -293,3 +293,7 @@ describe('move edit', () => {
     });
   });
 });
+
+test('empty array', () => {
+  new Cue("0", 0, 1, []);
+})
