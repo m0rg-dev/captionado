@@ -4,25 +4,11 @@ import { Cue, CueSet, EditEvent } from "./cue_set";
 import Editor from "./editor";
 import Player from "./player";
 import { v4 as uuidv4 } from 'uuid';
+import { parseTimecode } from "./utils";
 
 export type TimeInfo = {
   current: number,
   maximum: number,
-}
-
-function parseTimecode(tc: string): number {
-  const re = /(?:(\d+):)?(\d+):(\d+.\d+)/;
-  const found = tc.match(re);
-
-  if (found === null) {
-    throw new Error("bad timecode");
-  }
-
-  const hours = Number.parseInt(found[1] || "0");
-  const minutes = Number.parseInt(found[2]);
-  const seconds = Number.parseFloat(found[3]);
-
-  return hours * 3600 + minutes * 60 + seconds;
 }
 
 export default function App() {
@@ -93,10 +79,7 @@ export default function App() {
         lines.shift();
         const rest = lines.join("\n");
 
-        console.log(`start: ${startTC} end: ${endTC} lastEnd: ${lastEnd} cue: ${rest}`);
-
         if (lastEnd != undefined && startTC != lastEnd) {
-          console.log("inserting break");
           cueList.addCue(new Cue(uuidv4(), lastEnd, startTC, []));
         }
 

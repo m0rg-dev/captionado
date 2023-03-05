@@ -9,7 +9,6 @@ function CueElement(props: { time: number, cue: Cue, onTimeUpdate: (relative: nu
 
   function dropHandle(e: React.DragEvent, index: number) {
     e.preventDefault();
-    console.log(e);
 
     let event = JSON.parse(e.dataTransfer.getData("application/x-cue")) as EditEvent;
     if (event.type == "move") {
@@ -61,9 +60,6 @@ function CueElement(props: { time: number, cue: Cue, onTimeUpdate: (relative: nu
     } else {
       const character = props.cue.words_characters[index];
       const time = (character / props.cue.total_characters) * props.cue.duration();
-
-      console.log(`click ${props.cue.id} ${index} ${time}`);
-
       props.onTimeUpdate(time);
     }
   }

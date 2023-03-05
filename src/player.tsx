@@ -10,10 +10,8 @@ export default function Player(props: {
 }) {
   const videoRef = React.useRef<HTMLVideoElement>();
   const lastTitlesGen = React.useRef<string>();
-  const titlesRef = React.useRef<string>();
 
   function updateTime() {
-    console.log(`updateTime ${videoRef.current?.currentTime}`);
     if (videoRef.current) {
       props.onTimeUpdate({ current: videoRef.current.currentTime, maximum: props.time.maximum });
     }
@@ -27,7 +25,6 @@ export default function Player(props: {
 
   React.useEffect(() => {
     if (videoRef.current && Math.abs(props.time.current - videoRef.current.currentTime) > 0.1) {
-      console.log(`seek ${props.time} ${videoRef.current.currentTime}`);
       videoRef.current.currentTime = props.time.current;
     }
 
@@ -58,12 +55,7 @@ export default function Player(props: {
         ref={videoRef}
         onTimeUpdate={updateTime}
         onCanPlay={updateMaxTime}
-      >
-      </video>
-      <div>
-        Current cue: {props.cues.getCueAt(props.time.current)?.toString()}
-      </div>
-      Playhead position: <>{props.time.current}</>
+      />
     </div>
   );
 }

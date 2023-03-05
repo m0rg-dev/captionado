@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
+import { vtt_timestamp } from './utils';
 
 export type EditEvent = {
   type: "move",
@@ -142,12 +143,9 @@ export class CueSet {
         return false;
       }
 
-      console.debug(`move ${event.edge} from ${from_cue} to ${to_cue} ${event.to_index}`);
-
       let join_start = Math.min(from_cue, to_cue);
       let join_end = Math.max(from_cue, to_cue);
 
-      console.debug(`  split ${to_cue} ${event.to_index}`);
       this.edit({ type: "split", id: this.cues[to_cue].id, index: event.to_index });
 
       // adjust join range based on inputs.
@@ -165,11 +163,8 @@ export class CueSet {
         join_start--;
       }
 
-      console.debug(`  join from ${join_start} to ${join_end}`);
-
       for (let i = join_end - 1; i >= join_start; i--) {
         if (i < 0) continue;
-        console.debug(`    join ${i} >`);
         this.edit({ type: "join", id: this.cues[i].id, edge: "end" });
       }
 
@@ -268,13 +263,3 @@ export class CueSet {
     return chunks.join("\n\n");
   }
 }
-
-function vtt_timestamp(time: number): string {
-  const hours = Math.floor(time / 3600).toString().padStart(2, "0");
-  const minutes = (Math.floor(time / 60) % 60).toString().padStart(2, "0");
-  const seconds = (Math.floor(time)).toString().padStart(2, "0");
-
-  const millis = Math.floor((time % 1) * 1000).toString().padStart(2, "0");
-
-  return `${hours}:${minutes}:${seconds}.${millis}`;
-} 

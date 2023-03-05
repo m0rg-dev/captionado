@@ -4,6 +4,7 @@ import RegionsPlugin, { Region, RegionParams } from "wavesurfer.js/src/plugin/re
 import { TimeInfo } from "./app";
 
 import { CueSet, EditEvent } from "./cue_set";
+import { vtt_timestamp } from "./utils";
 
 type EditState = {
   "state": "locked",
@@ -176,8 +177,7 @@ export default function CueEditor(props: { time: TimeInfo, cues: CueSet, audio: 
   }
 
   return (<div id="cue-editor">
-    Start: {current_cue.startTime}<br />
-    End: {current_cue.endTime}<br />
+    Timing: {vtt_timestamp(current_cue.startTime)} --&gt; {vtt_timestamp(current_cue.endTime)}<br />
     <button onClick={gap}>Add Gap</button><br />
     Contents:<br />
     {textarea}
