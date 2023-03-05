@@ -103,8 +103,8 @@ export class Cue {
 }
 
 export class CueSet {
-  id: string;
   cues: Cue[];
+  id: string;
 
   public constructor() {
     this.cues = [];
@@ -259,14 +259,19 @@ export class CueSet {
     const chunks = ["WEBVTT"];
 
     for (const cue of this.cues) {
-      const start_min = Math.floor(cue.startTime / 60);
-      const start_sec = (cue.startTime % 60).toFixed(3);
-      const end_min = Math.floor(cue.endTime / 60);
-      const end_sec = (cue.endTime % 60).toFixed(3);
-
-      chunks.push(`${start_min}:${start_sec} --> ${end_min}:${end_sec}\n${cue.words.join(" ")}`);
+      chunks.push(`${vtt_timestamp(cue.startTime)} --> ${vtt_timestamp(cue.endTime)}\n${cue.words.join(" ")}`);
     }
 
     return chunks.join("\n\n");
   }
 }
+
+function vtt_timestamp(time: number): string {
+  const hours = Math.floor(time / 3600).toString().padStart(2, "0");
+  const minutes = (Math.floor(time / 60) % 60).toString().padStart(2, "0");
+  const seconds = (Math.floor(time)).toString().padStart(2, "0");
+
+  const millis = Math.floor((time % 1) * 1000).toString().padStart(2, "0");
+
+  return `${hours}:${minutes}:${seconds}.${millis}`;
+} 

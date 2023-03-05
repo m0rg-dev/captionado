@@ -5,20 +5,12 @@ import { CueSet } from "./cue_set";
 export default function Player(props: {
   time: TimeInfo,
   cues: CueSet,
+  video: string,
   onTimeUpdate: (time: TimeInfo) => void,
 }) {
-  const [videoFile, setVideoFile] = React.useState<string | undefined>(undefined);
-
-  const videoRef = React.useRef<HTMLVideoElement | null>(null);
-
-  function loadVideo(event: React.ChangeEvent<HTMLInputElement>) {
-    if (event.currentTarget.files === null) {
-      return;
-    }
-
-    const file = event.currentTarget.files[0];
-    setVideoFile(URL.createObjectURL(file));
-  }
+  const videoRef = React.useRef<HTMLVideoElement>();
+  const lastTitlesGen = React.useRef<string>();
+  const titlesRef = React.useRef<string>();
 
   function updateTime() {
     console.log(`updateTime ${videoRef.current?.currentTime}`);
@@ -38,28 +30,36 @@ export default function Player(props: {
       console.log(`seek ${props.time} ${videoRef.current.currentTime}`);
       videoRef.current.currentTime = props.time.current;
     }
+
+    if (props.cues.id != lastTitlesGen.current) {
+      if (!videoRef.current.textTracks[0]) {
+        const track = videoRef.current.addTextTrack("captions", "Captions");
+        track.mode = "showing";
+      }
+
+      for (let i = videoRef.current.textTracks[0].cues.length - 1; i >= 0; i--) {
+        videoRef.current.textTracks[0].removeCue(videoRef.current.textTracks[0].cues[i]);
+      }
+
+      for (const cue of props.cues.cues) {
+        videoRef.current.textTracks[0].addCue(new VTTCue(cue.startTime, cue.endTime, cue.text()));
+      }
+
+      lastTitlesGen.current = props.cues.id;
+    }
   })
 
   return (
     <div>
-      <div id="inputs">
-        Video: <input type="file" accept="video/*" onChange={loadVideo} />
-      </div>
-      <div id="video-player">
-        <video
-          id="video"
-          controls
-          src={videoFile}
-          ref={videoRef}
-          onTimeUpdate={updateTime}
-          onCanPlay={updateMaxTime}
-        ></video>
-        <div id="caption">
-          <div id="caption-inner">
-            {props.cues.getCueAt(props.time.current)?.text()}
-          </div>
-        </div>
-      </div>
+      <video
+        id="video"
+        controls
+        src={props.video}
+        ref={videoRef}
+        onTimeUpdate={updateTime}
+        onCanPlay={updateMaxTime}
+      >
+      </video>
       <div>
         Current cue: {props.cues.getCueAt(props.time.current)?.toString()}
       </div>

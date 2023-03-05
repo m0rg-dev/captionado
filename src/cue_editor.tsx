@@ -97,9 +97,8 @@ function Waveform(props: { url: string, cues: CueSet, time: TimeInfo, onEdit: (e
   )
 }
 
-export default function CueEditor(props: { time: TimeInfo, cues: CueSet, onEdit: (edit: EditEvent) => void, onTimeUpdate: (time: TimeInfo) => void }) {
+export default function CueEditor(props: { time: TimeInfo, cues: CueSet, audio: string, onEdit: (edit: EditEvent) => void, onTimeUpdate: (time: TimeInfo) => void }) {
   const [editState, setEditState] = React.useState<EditState>({ "state": "no_cue" });
-  const [audio, setAudio] = React.useState<string>();
 
   const current_cue = props.cues.getCueAt(props.time.current);
 
@@ -108,14 +107,6 @@ export default function CueEditor(props: { time: TimeInfo, cues: CueSet, onEdit:
       props.onEdit({ type: "set_contents", id: current_cue.id, contents: e.target.value.split(/\s+/) });
       setEditState({ "state": "editing", "cue_id": current_cue.id, "text": e.target.value.trim() });
     }
-  }
-
-  function loadWaveform(e: React.ChangeEvent<HTMLInputElement>) {
-    if (e.currentTarget.files === null) {
-      return;
-    }
-
-    setAudio(URL.createObjectURL(e.currentTarget.files[0]));
   }
 
   React.useEffect(() => {
@@ -163,7 +154,6 @@ export default function CueEditor(props: { time: TimeInfo, cues: CueSet, onEdit:
     <button onClick={gap}>Add Gap</button><br />
     Contents:<br />
     {textarea}
-    <Waveform url={audio} time={props.time} cues={props.cues} onEdit={props.onEdit} onTimeUpdate={props.onTimeUpdate} />
-    Audio: <input type="file" accept="audio/*" onChange={loadWaveform} />
+    <Waveform url={props.audio} time={props.time} cues={props.cues} onEdit={props.onEdit} onTimeUpdate={props.onTimeUpdate} />
   </div>);
 }

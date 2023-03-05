@@ -1,5 +1,4 @@
 import * as React from "react";
-import { v4 as uuidv4 } from 'uuid';
 import { CueSet, EditEvent, Cue } from "./cue_set";
 
 function CueElement(props: { time: number, cue: Cue, onTimeUpdate: (relative: number) => void, onEdit: (event: EditEvent) => void }) {
@@ -121,87 +120,10 @@ function CueList(props: { time: number, cues: CueSet, onTimeUpdate: (time: numbe
   </table>;
 }
 
-function parseTimecode(tc: string): number {
-  const re = /(\d+):(\d+.\d+)/;
-  const found = tc.match(re);
-
-  if (found === null) {
-    throw new Error("bad timecode");
-  }
-
-  const minutes = Number.parseInt(found[1]);
-  const seconds = Number.parseFloat(found[2]);
-
-  return minutes * 60 + seconds;
-}
-
 export default function Editor(props: { time: number, cues: CueSet, onCueUpdate: (cues: CueSet) => void, onTimeUpdate: (time: number) => void, onEdit: (event: EditEvent) => void }) {
-  async function loadTitles(event: React.ChangeEvent<HTMLInputElement>) {
-    if (event.currentTarget.files === null) return;
-
-    const file = event.currentTarget.files[0];
-
-    const reader = new FileReader();
-    const contents: string = await new Promise((res, rej) => {
-      reader.addEventListener('load', (event) => {
-        if (typeof event.target?.result !== "string") {
-          throw new Error("can't happen!");
-        }
-
-        res(event.target.result)
-      });
-      reader.readAsText(file);
-    });
-
-    // Welcome to The Worst VTT Parser Ever!
-    const cueList = new CueSet();
-
-    let lastEnd: number | null = null;
-
-    for (const chunk of contents.split("\n\n")) {
-      if (chunk == "WEBVTT") {
-        // nop, magic number
-        continue;
-      }
-
-      const lines = chunk.split("\n")
-      if (lines[0].includes(" --> ")) {
-        const [startTC, endTC] = lines[0].split(" --> ").map(parseTimecode);
-        lines.shift();
-        const rest = lines.join("\n");
-
-        console.log(`start: ${startTC} end: ${endTC} lastEnd: ${lastEnd} cue: ${rest}`);
-
-        if (lastEnd != undefined && startTC != lastEnd) {
-          console.log("inserting break");
-          cueList.addCue(new Cue(uuidv4(), lastEnd, startTC, []));
-        }
-
-        lastEnd = endTC;
-
-        cueList.addCue(new Cue(uuidv4(), startTC, endTC, rest.split(/\s+/)));
-      } else {
-        // TODO: bad chunk
-      }
-    }
-
-    props.onCueUpdate(cueList);
-  }
-
-  function download() {
-    const blob = new Blob([props.cues.export()], { type: 'text/vtt' });
-    const elem = window.document.createElement('a');
-    elem.href = window.URL.createObjectURL(blob);
-    elem.download = "";
-    document.body.appendChild(elem);
-    elem.click();
-    document.body.removeChild(elem);
-  }
-
   return (
     <div id="editor">
       <div>
-        Captions: <input type="file" accept="text/vtt" onChange={loadTitles} /> <button onClick={download}>Download</button>
       </div>
       <CueList cues={props.cues} time={props.time} onTimeUpdate={props.onTimeUpdate} onEdit={props.onEdit} />
     </div>
