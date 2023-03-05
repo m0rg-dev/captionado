@@ -79,7 +79,7 @@ export class Cue {
 
   public clone(): Cue {
     // TODO could we optimize here by copying the generated fields?
-    return new Cue(this.id, this.startTime, this.endTime, this.words);
+    return new Cue(this.id, this.startTime, this.endTime, [...this.words]);
   }
 
   public toString(): string {

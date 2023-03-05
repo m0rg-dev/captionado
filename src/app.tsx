@@ -70,7 +70,7 @@ export default function App() {
 
   function handleEdit(event: EditEvent) {
     setHistory(h => {
-      const newCues = history.tip().clone();
+      const newCues = h.tip().clone();
       const success = newCues.edit(event);
 
       // don't create undo log events for failed edits!
