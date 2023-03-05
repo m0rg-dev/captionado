@@ -189,7 +189,7 @@ export default function Editor(props: { time: number, cues: CueSet, onCueUpdate:
   }
 
   return (
-    <div>
+    <div id="editor">
       <div>
         Subtitles: <input type="file" accept="text/vtt" onChange={loadTitles} />
       </div>

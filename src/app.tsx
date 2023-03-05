@@ -27,7 +27,7 @@ export default function App() {
     <div id="container">
       <div>
         <Player time={time} cues={cues} onTimeUpdate={setTime} />
-        <CueEditor time={time} cues={cues} onEdit={handleEdit} />
+        <CueEditor time={time} cues={cues} onEdit={handleEdit} onTimeUpdate={setTime} />
       </div>
       <Editor time={time.current} cues={cues} onCueUpdate={setCues} onTimeUpdate={setPlayhead} onEdit={handleEdit} />
     </div>

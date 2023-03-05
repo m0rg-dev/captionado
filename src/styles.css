@@ -67,3 +67,8 @@ body {
 #waveform {
   width: 90%;
 }
+
+#editor {
+  max-height: 90vh;
+  overflow-y: scroll;
+}

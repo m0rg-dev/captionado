@@ -16,7 +16,7 @@ type EditState = {
   "state": "no_cue",
 };
 
-function Waveform(props: { url: string, cues: CueSet, time: TimeInfo, onEdit: (edit: EditEvent) => void }) {
+function Waveform(props: { url: string, cues: CueSet, time: TimeInfo, onEdit: (edit: EditEvent) => void, onTimeUpdate: (time: TimeInfo) => void }) {
   const waveformRef = React.useRef();
   const wavesurferRef = React.useRef<WaveSurfer>();
   const zoomRef = React.useRef<HTMLInputElement>();
@@ -32,7 +32,6 @@ function Waveform(props: { url: string, cues: CueSet, time: TimeInfo, onEdit: (e
         end: wavesurferRef.current.regions.list[region.id].end,
       })
     }
-
   }
 
   React.useEffect(() => {
@@ -99,7 +98,7 @@ function Waveform(props: { url: string, cues: CueSet, time: TimeInfo, onEdit: (e
   )
 }
 
-export default function CueEditor(props: { time: TimeInfo, cues: CueSet, onEdit: (edit: EditEvent) => void }) {
+export default function CueEditor(props: { time: TimeInfo, cues: CueSet, onEdit: (edit: EditEvent) => void, onTimeUpdate: (time: TimeInfo) => void }) {
   const [editState, setEditState] = React.useState<EditState>({ "state": "no_cue" });
   const [audio, setAudio] = React.useState<string>();
 
@@ -151,7 +150,7 @@ export default function CueEditor(props: { time: TimeInfo, cues: CueSet, onEdit:
           End: {current_cue.endTime}<br />
           Contents:<br />
           <textarea id="cue-textarea" value={editState.text} onChange={updateContents}></textarea>
-          <Waveform url={audio} time={props.time} cues={props.cues} onEdit={props.onEdit} />
+          <Waveform url={audio} time={props.time} cues={props.cues} onEdit={props.onEdit} onTimeUpdate={props.onTimeUpdate} />
           Audio: <input type="file" accept="audio/*" onChange={loadWaveform} />
         </div>
       );
@@ -161,7 +160,7 @@ export default function CueEditor(props: { time: TimeInfo, cues: CueSet, onEdit:
         End: {current_cue.endTime}<br />
         Contents:<br />
         <textarea id="cue-textarea" value={current_cue.getWords().join(" ")} onChange={updateContents}></textarea>
-        <Waveform url={audio} time={props.time} cues={props.cues} onEdit={props.onEdit} />
+        <Waveform url={audio} time={props.time} cues={props.cues} onEdit={props.onEdit} onTimeUpdate={props.onTimeUpdate} />
         Audio: <input type="file" accept="audio/*" onChange={loadWaveform} />
       </div>);
     case "no_cue":
