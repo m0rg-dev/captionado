@@ -188,10 +188,20 @@ export default function Editor(props: { time: number, cues: CueSet, onCueUpdate:
     props.onCueUpdate(cueList);
   }
 
+  function download() {
+    const blob = new Blob([props.cues.export()], { type: 'text/vtt' });
+    const elem = window.document.createElement('a');
+    elem.href = window.URL.createObjectURL(blob);
+    elem.download = "";
+    document.body.appendChild(elem);
+    elem.click();
+    document.body.removeChild(elem);
+  }
+
   return (
     <div id="editor">
       <div>
-        Subtitles: <input type="file" accept="text/vtt" onChange={loadTitles} />
+        Captions: <input type="file" accept="text/vtt" onChange={loadTitles} /> <button onClick={download}>Download</button>
       </div>
       <CueList cues={props.cues} time={props.time} onTimeUpdate={props.onTimeUpdate} onEdit={props.onEdit} />
     </div>

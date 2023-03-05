@@ -34,6 +34,7 @@ module.exports = {
     usedExports: true,
     splitChunks: {
       chunks: 'all',
-    }
+    },
+    minimize: false
   }
 };

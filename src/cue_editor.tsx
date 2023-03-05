@@ -50,6 +50,7 @@ function Waveform(props: { url: string, cues: CueSet, time: TimeInfo, onEdit: (e
 
       wavesurfer.load(props.url);
       setLoadedURL(props.url);
+      wavesurfer.on('region-update-end', updateRegion);
       wavesurferRef.current = wavesurfer;
     }
 
@@ -77,8 +78,6 @@ function Waveform(props: { url: string, cues: CueSet, time: TimeInfo, onEdit: (e
         } else {
           wavesurferRef.current.regions.add(params);
         }
-
-        wavesurferRef.current.on('region-update-end', updateRegion);
       }
     }
   });
@@ -131,9 +130,8 @@ export default function CueEditor(props: { time: TimeInfo, cues: CueSet, onEdit:
     }
   });
 
-  // TODO less repetition
+  function gap() { props.onEdit({ type: "gap", id: current_cue.id }); }
 
-  // this can happen for stupid reasons
   if (!current_cue) {
     return (
       <div id="cue-editor">
@@ -142,32 +140,30 @@ export default function CueEditor(props: { time: TimeInfo, cues: CueSet, onEdit:
     );
   }
 
+  let textarea;
+
   switch (editState.state) {
     case "editing":
-      return (
-        <div id="cue-editor">
-          Start: {current_cue.startTime}<br />
-          End: {current_cue.endTime}<br />
-          Contents:<br />
-          <textarea id="cue-textarea" value={editState.text} onChange={updateContents}></textarea>
-          <Waveform url={audio} time={props.time} cues={props.cues} onEdit={props.onEdit} onTimeUpdate={props.onTimeUpdate} />
-          Audio: <input type="file" accept="audio/*" onChange={loadWaveform} />
-        </div>
-      );
+      textarea = <textarea id="cue-textarea" value={editState.text} onChange={updateContents}></textarea>;
+      break;
     case "locked":
-      return (<div id="cue-editor">
-        Start: {current_cue.startTime}<br />
-        End: {current_cue.endTime}<br />
-        Contents:<br />
-        <textarea id="cue-textarea" value={current_cue.getWords().join(" ")} onChange={updateContents}></textarea>
-        <Waveform url={audio} time={props.time} cues={props.cues} onEdit={props.onEdit} onTimeUpdate={props.onTimeUpdate} />
-        Audio: <input type="file" accept="audio/*" onChange={loadWaveform} />
-      </div>);
+      textarea = <textarea id="cue-textarea" value={current_cue.getWords().join(" ")} onChange={updateContents}></textarea>;
+      break;
     case "no_cue":
       return (
         <div id="cue-editor">
-          [no cue selected] <br />
+          [no cue selected]<br />
         </div>
       );
   }
+
+  return (<div id="cue-editor">
+    Start: {current_cue.startTime}<br />
+    End: {current_cue.endTime}<br />
+    <button onClick={gap}>Add Gap</button><br />
+    Contents:<br />
+    {textarea}
+    <Waveform url={audio} time={props.time} cues={props.cues} onEdit={props.onEdit} onTimeUpdate={props.onTimeUpdate} />
+    Audio: <input type="file" accept="audio/*" onChange={loadWaveform} />
+  </div>);
 }

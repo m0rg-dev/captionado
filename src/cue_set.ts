@@ -23,6 +23,9 @@ export type EditEvent = {
   id: string,
   start: number,
   end: number
+} | {
+  type: "gap",
+  id: string,
 };
 
 // Index mechanics:
@@ -235,8 +238,35 @@ export class CueSet {
 
       if (this.cues[cue_index - 1]) this.cues[cue_index - 1].endTime = event.start;
       if (this.cues[cue_index + 1]) this.cues[cue_index + 1].startTime = event.end;
+    } else if (event.type == "gap") {
+      const cue_index = this.cues.findIndex((cue) => cue.id == event.id);
+
+      const point = Math.max(this.cues[cue_index].endTime - 1, this.cues[cue_index].duration() / 2 + this.cues[cue_index].startTime);
+      this.cues.splice(cue_index + 1, 0, new Cue(
+        uuidv4(),
+        point,
+        this.cues[cue_index].endTime,
+        []
+      ));
+
+      this.cues[cue_index].endTime = point;
     }
 
     return true;
+  }
+
+  public export(): string {
+    const chunks = ["WEBVTT"];
+
+    for (const cue of this.cues) {
+      const start_min = Math.floor(cue.startTime / 60);
+      const start_sec = (cue.startTime % 60).toFixed(3);
+      const end_min = Math.floor(cue.endTime / 60);
+      const end_sec = (cue.endTime % 60).toFixed(3);
+
+      chunks.push(`${start_min}:${start_sec} --> ${end_min}:${end_sec}\n${cue.words.join(" ")}`);
+    }
+
+    return chunks.join("\n\n");
   }
 }
