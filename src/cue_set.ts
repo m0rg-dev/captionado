@@ -251,6 +251,8 @@ export class CueSet {
 
       if (this.cues[cue_index - 1]) this.cues[cue_index - 1].endTime = event.start;
       if (this.cues[cue_index + 1]) this.cues[cue_index + 1].startTime = event.end;
+
+      this.cues[cue_index].id = uuidv4();
     } else if (event.type == "gap") {
       const cue_index = this.cues.findIndex((cue) => cue.id == event.id);
 

@@ -11,12 +11,45 @@ export type TimeInfo = {
   maximum: number,
 }
 
+class History {
+  history: CueSet[];
+  position: number;
+
+  constructor(history: CueSet[], position = 0) {
+    this.history = history;
+    this.position = position;
+  }
+
+  insert(cue: CueSet): History {
+    return new History(this.history.slice(0, this.position + 1).concat(cue), this.position + 1);
+  }
+
+  undo(): History {
+    if (this.position > 0) {
+      return new History(this.history, this.position - 1);
+    } else {
+      return this;
+    }
+  }
+
+  redo(): History {
+    if (this.position < this.history.length - 1) {
+      return new History(this.history, this.position + 1);
+    } else {
+      return this;
+    }
+  }
+
+  tip(): CueSet {
+    return this.history[this.position];
+  }
+}
+
 export default function App() {
   const [video, setVideo] = React.useState<string>();
   const [audio, setAudio] = React.useState<string>();
   const [time, setTime] = React.useState<TimeInfo>({ current: 0.0, maximum: 0.0 });
-  const [history, setHistory] = React.useState([new CueSet()]);
-  const [historyPosition, setHistoryPosition] = React.useState(0);
+  const [history, setHistory] = React.useState(new History([new CueSet()], 0));
 
   function loadVideo(event: React.ChangeEvent<HTMLInputElement>) {
     if (event.currentTarget.files === null) {
@@ -37,13 +70,12 @@ export default function App() {
 
   function handleEdit(event: EditEvent) {
     setHistory(h => {
-      const newCues = history[historyPosition].clone();
+      const newCues = history.tip().clone();
       const success = newCues.edit(event);
 
       // don't create undo log events for failed edits!
       if (success) {
-        setHistoryPosition(p => p + 1);
-        return h.slice(0, historyPosition + 1).concat(newCues);
+        return h.insert(newCues);
       } else {
         return h;
       }
@@ -52,23 +84,11 @@ export default function App() {
   }
 
   function undo() {
-    setHistoryPosition(p => {
-      if (p > 0) {
-        return p - 1;
-      } else {
-        return p;
-      }
-    })
+    setHistory(h => h.undo());
   }
 
   function redo() {
-    setHistoryPosition(p => {
-      if (p < history.length - 1) {
-        return p + 1;
-      } else {
-        return p;
-      }
-    });
+    setHistory(h => h.redo());
   }
 
   function setPlayhead(current: number) {
@@ -121,12 +141,11 @@ export default function App() {
       }
     }
 
-    setHistory(h => h.concat(cueList));
-    setHistoryPosition(p => p + 1);
+    setHistory(h => h.insert(cueList));
   }
 
   function download() {
-    const blob = new Blob([history[historyPosition].export()], { type: 'text/vtt' });
+    const blob = new Blob([history.tip().export()], { type: 'text/vtt' });
     const elem = document.createElement('a');
     elem.href = URL.createObjectURL(blob);
     elem.download = "";
@@ -144,13 +163,13 @@ export default function App() {
       <div>
         <Player
           time={time}
-          cues={history[historyPosition]}
+          cues={history.tip()}
           video={video}
           onTimeUpdate={setTime}
         />
         <CueEditor
           time={time}
-          cues={history[historyPosition]}
+          cues={history.tip()}
           audio={audio}
           onEdit={handleEdit}
           onTimeUpdate={setTime}
@@ -161,12 +180,12 @@ export default function App() {
           Video: <input type="file" accept="video/*" onChange={loadVideo} /><br />
           Captions: <input type="file" accept="text/vtt" onChange={loadTitles} /> <button onClick={download}>Download</button><br />
           Audio: <input type="file" accept="audio/*" onChange={loadWaveform} /><br />
-          <button onClick={undo} disabled={historyPosition == 0}>Undo</button>
-          <button onClick={redo} disabled={historyPosition >= history.length - 1}>Redo</button>
+          <button onClick={undo} disabled={history.position == 0}>Undo</button>
+          <button onClick={redo} disabled={history.position >= history.history.length - 1}>Redo</button>
           |
           <button onClick={reflow}>Reflow</button>
         </div>
-        <Editor time={time.current} cues={history[historyPosition]} onTimeUpdate={setPlayhead} onEdit={handleEdit} />
+        <Editor time={time.current} cues={history.tip()} onTimeUpdate={setPlayhead} onEdit={handleEdit} />
       </div>
     </div>
   )
