@@ -16,12 +16,14 @@ export default function Player(props: {
   }
 
   function updateTime() {
+    console.log(`updateTime ${videoRef.current.currentTime}`);
     props.onTimeUpdate(videoRef.current.currentTime);
   }
 
   React.useEffect(() => {
-    if (props.time != videoRef.current.currentTime) {
-      videoRef.current.fastSeek(props.time);
+    if (Math.abs(props.time - videoRef.current.currentTime) > 0.1) {
+      console.log(`seek ${props.time} ${videoRef.current.currentTime}`);
+      videoRef.current.currentTime = props.time;
     }
   })
 

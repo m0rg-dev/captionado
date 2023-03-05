@@ -63,7 +63,7 @@ function CueElement(props: { time: number, cue: Cue, onTimeUpdate: (relative: nu
       const character = props.cue.words_characters[index];
       const time = (character / props.cue.total_characters) * props.cue.duration();
 
-      console.log(props.cue);
+      console.log(`click ${props.cue.id} ${index} ${time}`);
 
       props.onTimeUpdate(time);
     }

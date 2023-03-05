@@ -24,13 +24,24 @@ export default function CueEditor(props: { time: number, cues: CueSet, onEdit: (
 
   React.useEffect(() => {
     if (current_cue) {
-      if ((editState.state == "editing" && current_cue.id != editState.cue_id) || editState.state == "no_cue") {
+      if ((editState.state == "editing" && current_cue.id != editState.cue_id)
+        || (editState.state == "locked" && current_cue.id != editState.cue_id)
+        || editState.state == "no_cue") {
         setEditState({ "state": "locked", "cue_id": current_cue.id });
       }
     } else {
       setEditState({ "state": "no_cue" });
     }
   });
+
+  // this can happen for stupid reasons
+  if (!current_cue) {
+    return (
+      <div id="cue-editor">
+        [no cue selected]
+      </div>
+    );
+  }
 
   switch (editState.state) {
     case "editing":
