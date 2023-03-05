@@ -73,6 +73,11 @@ export class Cue {
     }
   }
 
+  public clone(): Cue {
+    // TODO could we optimize here by copying the generated fields?
+    return new Cue(this.id, this.startTime, this.endTime, this.words);
+  }
+
   public toString(): string {
     return `${this.startTime.toFixed(3)} -> ${this.endTime.toFixed(3)}: ${this.words.join(" ")}`;
   }
@@ -115,6 +120,15 @@ export class CueSet {
   public shallowCopy(): CueSet {
     let rc = new CueSet();
     rc.cues = this.cues;
+    return rc;
+  }
+
+  public clone(): CueSet {
+    let rc = new CueSet();
+    for (const cue of this.cues) {
+      rc.addCue(cue.clone());
+    }
+
     return rc;
   }
 

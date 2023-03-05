@@ -15,8 +15,8 @@ export default function App() {
   const [video, setVideo] = React.useState<string>();
   const [audio, setAudio] = React.useState<string>();
   const [time, setTime] = React.useState<TimeInfo>({ current: 0.0, maximum: 0.0 });
-  const [cues, setCues] = React.useState(new CueSet());
-
+  const [history, setHistory] = React.useState([new CueSet()]);
+  const [historyPosition, setHistoryPosition] = React.useState(0);
 
   function loadVideo(event: React.ChangeEvent<HTMLInputElement>) {
     if (event.currentTarget.files === null) {
@@ -36,9 +36,47 @@ export default function App() {
   }
 
   function handleEdit(event: EditEvent) {
-    const newCues = cues.shallowCopy();
-    newCues.edit(event);
-    setCues(newCues);
+    setHistory(h => {
+      console.log({
+        history,
+        historyPosition
+      });
+      const newCues = history[historyPosition].clone();
+      const success = newCues.edit(event);
+
+      // don't create undo log events for failed edits!
+      if (success) {
+        setHistoryPosition(p => p + 1);
+        return h.slice(0, historyPosition + 1).concat(newCues);
+      } else {
+        return h;
+      }
+    });
+
+  }
+
+  function undo() {
+    setHistoryPosition(p => {
+      console.log(`undo ${p}`);
+      if (p > 0) {
+        return p - 1;
+      } else {
+        console.log("(suppressed)");
+        return p;
+      }
+    })
+  }
+
+  function redo() {
+    setHistoryPosition(p => {
+      console.log(`redo ${p}`);
+      if (p < history.length - 1) {
+        return p + 1;
+      } else {
+        console.log("(suppressed)");
+        return p;
+      }
+    });
   }
 
   function setPlayhead(current: number) {
@@ -91,11 +129,12 @@ export default function App() {
       }
     }
 
-    setCues(cueList);
+    setHistory(h => h.concat(cueList));
+    setHistoryPosition(p => p + 1);
   }
 
   function download() {
-    const blob = new Blob([cues.export()], { type: 'text/vtt' });
+    const blob = new Blob([history[historyPosition].export()], { type: 'text/vtt' });
     const elem = document.createElement('a');
     elem.href = URL.createObjectURL(blob);
     elem.download = "";
@@ -109,13 +148,13 @@ export default function App() {
       <div>
         <Player
           time={time}
-          cues={cues}
+          cues={history[historyPosition]}
           video={video}
           onTimeUpdate={setTime}
         />
         <CueEditor
           time={time}
-          cues={cues}
+          cues={history[historyPosition]}
           audio={audio}
           onEdit={handleEdit}
           onTimeUpdate={setTime}
@@ -125,9 +164,10 @@ export default function App() {
         <div id="inputs">
           Video: <input type="file" accept="video/*" onChange={loadVideo} /><br />
           Captions: <input type="file" accept="text/vtt" onChange={loadTitles} /> <button onClick={download}>Download</button><br />
-          Audio: <input type="file" accept="audio/*" onChange={loadWaveform} />
+          Audio: <input type="file" accept="audio/*" onChange={loadWaveform} /><br />
+          <button onClick={undo} disabled={historyPosition == 0}>Undo</button> <button onClick={redo} disabled={historyPosition >= history.length - 1}>Redo</button>
         </div>
-        <Editor time={time.current} cues={cues} onCueUpdate={setCues} onTimeUpdate={setPlayhead} onEdit={handleEdit} />
+        <Editor time={time.current} cues={history[historyPosition]} onTimeUpdate={setPlayhead} onEdit={handleEdit} />
       </div>
     </div>
   )

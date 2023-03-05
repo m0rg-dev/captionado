@@ -116,7 +116,7 @@ function CueList(props: { time: number, cues: CueSet, onTimeUpdate: (time: numbe
   </table>;
 }
 
-export default function Editor(props: { time: number, cues: CueSet, onCueUpdate: (cues: CueSet) => void, onTimeUpdate: (time: number) => void, onEdit: (event: EditEvent) => void }) {
+export default function Editor(props: { time: number, cues: CueSet, onTimeUpdate: (time: number) => void, onEdit: (event: EditEvent) => void }) {
   return (
     <div id="editor">
       <div>
