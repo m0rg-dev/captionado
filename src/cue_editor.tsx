@@ -16,12 +16,22 @@ type EditState = {
   "state": "no_cue",
 };
 
+type WaveformState = {
+  "state": "not_loaded"
+} | {
+  "state": "loading",
+  "progress": number,
+} | {
+  "state": "loaded"
+};
+
 function Waveform(props: { url: string, cues: CueSet, time: TimeInfo, onEdit: (edit: EditEvent) => void, onTimeUpdate: (time: TimeInfo) => void }) {
   const waveformRef = React.useRef();
   const wavesurferRef = React.useRef<WaveSurfer>();
   const zoomRef = React.useRef<HTMLInputElement>();
   const [loadedURL, setLoadedURL] = React.useState<string>();
   const [lastCue, setLastCue] = React.useState<string>();
+  const [progress, setProgress] = React.useState<WaveformState>({ state: "not_loaded" });
 
   function updateRegion(region: Region) {
     if (wavesurferRef.current) {
@@ -51,6 +61,12 @@ function Waveform(props: { url: string, cues: CueSet, time: TimeInfo, onEdit: (e
       wavesurfer.load(props.url);
       setLoadedURL(props.url);
       wavesurfer.on('region-update-end', updateRegion);
+      wavesurfer.on('loading', (progress: number) => {
+        setProgress({ state: "loading", progress });
+      });
+      wavesurfer.on('ready', () => {
+        setProgress({ state: "loaded" });
+      });
       wavesurferRef.current = wavesurfer;
     }
 
@@ -88,8 +104,19 @@ function Waveform(props: { url: string, cues: CueSet, time: TimeInfo, onEdit: (e
     }
   }
 
+
+  let audio_progress;
+  if (progress.state == "loading") {
+    if (progress.progress < 100) {
+      audio_progress = <div id="audio-status">Loading audio: {progress.progress}%</div>
+    } else {
+      audio_progress = <div id="audio-status">Loading audio: Rendering waveform...</div>
+    }
+  }
+
   return (<>
     <div id="waveform" ref={waveformRef}></div>
+    {audio_progress}
     <input id="zoom" type="range" min="1" max="100" onMouseUp={zoom} ref={zoomRef}></input>
     <label htmlFor="zoom">Audio Zoom</label>
     <br />

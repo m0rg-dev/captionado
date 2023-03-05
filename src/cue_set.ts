@@ -250,6 +250,9 @@ export class CueSet {
       ));
 
       this.cues[cue_index].endTime = point;
+
+      // reroll the ID on the edited region so the waveform display picks it up
+      this.cues[cue_index].id = uuidv4();
     }
 
     return true;
