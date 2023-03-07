@@ -149,8 +149,6 @@ export default function CueEditor(props: { time: TimeInfo, cues: CueSet, audio: 
     }
   });
 
-  function gap() { props.onEdit({ type: "gap", id: current_cue.id }); }
-
   if (!current_cue) {
     return (
       <div id="cue-editor">

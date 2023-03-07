@@ -208,16 +208,18 @@ describe('move edit', () => {
     test('move end point forward (one cue)', () => {
       const set = new CueSet();
 
+      set.addCue(new Cue("start", 0, 1, ["start"]))
       //                                  v from
-      set.addCue(new Cue("0", 0, 1, ["foo"]));
+      set.addCue(new Cue("0", 1, 2, ["foo"]));
       //                                to v
-      set.addCue(new Cue("1", 1, 2, ["bar", "baz"]));
+      set.addCue(new Cue("1", 2, 3, ["bar", "baz"]));
 
       expect(set.edit({ type: "move", edge: "end", from_id: "0", to_id: "1", to_index: 1 })).toBe(true);
 
-      expect(set.cues).toHaveLength(2);
-      checkCue(set.cues[0], 0, 1.5, "foo", "bar");
-      checkCue(set.cues[1], 1.5, 2, "baz");
+      expect(set.cues).toHaveLength(3);
+      checkCue(set.cues[0], 0, 1, "start");
+      checkCue(set.cues[1], 1, 2.5, "foo", "bar");
+      checkCue(set.cues[2], 2.5, 3, "baz");
     });
 
     test('move end point forward (two cues)', () => {

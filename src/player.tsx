@@ -2,13 +2,12 @@ import * as React from "react";
 import { TimeInfo } from "./app";
 import { CueSet } from "./cue_set";
 
-export default function Player(props: {
+const Player = React.forwardRef(function Player(props: {
   time: TimeInfo,
   cues: CueSet,
   video: string,
   onTimeUpdate: (time: TimeInfo) => void,
-}) {
-  const videoRef = React.useRef<HTMLVideoElement>();
+}, videoRef: React.MutableRefObject<HTMLVideoElement>) {
   const lastTitlesGen = React.useRef<string>();
 
   function updateTime() {
@@ -56,4 +55,6 @@ export default function Player(props: {
       onCanPlay={updateMaxTime}
     />
   );
-}
+});
+
+export default Player;

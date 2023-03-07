@@ -46,6 +46,8 @@ class History {
 }
 
 export default function App() {
+  const videoRef = React.useRef<HTMLVideoElement>();
+
   const [video, setVideo] = React.useState<string>();
   const [audio, setAudio] = React.useState<string>();
   const [time, setTime] = React.useState<TimeInfo>({ current: 0.0, maximum: 0.0 });
@@ -162,6 +164,165 @@ export default function App() {
 
   function gap() { handleEdit({ type: "gap", id: current_cue.id }); }
 
+  function keyboardMove(edge: "start" | "end", direction: "earlier" | "later", mode: "word" | "nudge") {
+    if (mode == "word") {
+      let to_cue;
+      let to_index;
+      if (edge == "start" && direction == "earlier") {
+        to_cue = history.tip().previousCue(current_cue.id);
+      } else if (edge == "end" && direction == "later") {
+        to_cue = history.tip().nextCue(current_cue.id);
+      } else {
+        to_cue = current_cue;
+      }
+
+      if (direction == "later") {
+        to_index = 1;
+      } else {
+        to_index = to_cue.words.length - 1;
+        if (edge == "start") to_index--;
+      }
+
+      if (!to_cue) return;
+
+      handleEdit({ type: "move", edge, from_id: current_cue.id, to_id: to_cue.id, to_index });
+    } else {
+      let start = current_cue.startTime;
+      let end = current_cue.endTime;
+
+      let offset = direction == "earlier" ? -0.1 : 0.1;
+      if (edge == "start") start += offset;
+      else end += offset;
+
+      handleEdit({ type: "retime", id: current_cue.id, start, end });
+    }
+  }
+
+  function handleKeypress(this: Document, e: KeyboardEvent) {
+    // special cases: in the textbox
+    if (document.activeElement.id == "cue-textarea") {
+      if (e.key == "Escape") {
+        document.getElementById("cue-textarea").blur();
+      }
+      return;
+    }
+
+    // special cases: undo / redo
+    if (e.key == "z" && (e.metaKey || e.ctrlKey)) {
+      if (e.shiftKey) {
+        redo();
+      } else {
+        undo();
+      }
+      e.preventDefault();
+      return;
+    }
+
+    let shouldCancel = !((e.metaKey || e.ctrlKey));
+
+    const index = current_cue.indexForTime(time.current);
+
+    switch (e.key.toLowerCase()) {
+      // playback controls
+      case "k":
+        if (videoRef.current.paused) {
+          videoRef.current.play()
+        } else {
+          videoRef.current.pause()
+        }
+        break;
+
+      case "j":
+        setTime({ current: history.tip().previousStart(time.current), maximum: time.maximum });
+        break;
+
+      case "l":
+        setTime({ current: history.tip().nextEnd(time.current), maximum: time.maximum });
+        break;
+
+      case "u":
+        if (index > 1) {
+          setTime({ current: current_cue.timeForIndex(index - 1), maximum: time.maximum });
+        } else {
+          const previous_cue = history.tip().previousCue(current_cue.id);
+          if (previous_cue) {
+            setTime({ current: previous_cue.timeForIndex(previous_cue.words.length - 1), maximum: time.maximum });
+          }
+        }
+        break;
+
+      case "o":
+        if (index < current_cue.words.length) {
+          setTime({ current: current_cue.timeForIndex(index + 1), maximum: time.maximum });
+        } else {
+          const next_cue = history.tip().nextCue(current_cue.id);
+          if (next_cue) {
+            setTime({ current: next_cue.timeForIndex(1), maximum: time.maximum });
+          }
+        }
+        break;
+
+      case "i":
+        const previous_cue = history.tip().previousCue(current_cue.id);
+        if (previous_cue) {
+          setTime({ current: previous_cue.startTime, maximum: time.maximum });
+          // need to do this synchronously or we'll risk briefly playing from the wrong time
+          videoRef.current.currentTime = previous_cue.startTime;
+          videoRef.current.play();
+        }
+        break;
+
+      // editing (join / split)
+      case "z":
+        handleEdit({ type: "join", id: current_cue.id, edge: "start" });
+        break;
+
+      case "x":
+        handleEdit({ type: "split", id: current_cue.id, index: current_cue.indexForTime(time.current) });
+        break;
+
+      case "c":
+        handleEdit({ type: "join", id: current_cue.id, edge: "end" });
+        break;
+
+      // editing (move endpoints)
+      case "q":
+        keyboardMove("start", "earlier", e.shiftKey ? "nudge" : "word");
+        break;
+      case "a":
+        keyboardMove("start", "later", e.shiftKey ? "nudge" : "word");
+        break;
+      case "e":
+        keyboardMove("end", "earlier", e.shiftKey ? "nudge" : "word");
+        break;
+      case "d":
+        keyboardMove("end", "later", e.shiftKey ? "nudge" : "word");
+        break;
+
+      // editing (enter textbox)
+      case " ":
+        // TODO this is bad React
+        document.getElementById("cue-textarea").focus();
+        break;
+
+      default:
+        shouldCancel = false;
+        break;
+    }
+
+    if (shouldCancel) {
+      e.preventDefault();
+    }
+  }
+
+  React.useEffect(() => {
+    document.addEventListener('keydown', handleKeypress);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeypress);
+    };
+  });
+
   return (
     <div id="container">
       <div id="header">
@@ -175,6 +336,7 @@ export default function App() {
           cues={history.tip()}
           video={video}
           onTimeUpdate={setTime}
+          ref={videoRef}
         />
       </div>
       <div id="editor">

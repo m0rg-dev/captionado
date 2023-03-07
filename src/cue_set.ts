@@ -100,11 +100,16 @@ export class Cue {
 
   public timeForIndex(index: number): number {
     if (index == 0) {
-      return 0;
+      return this.startTime;
     }
 
     const character = this.words_characters[index - 1];
     return (character / this.total_characters) * this.duration() + this.startTime;
+  }
+
+  public indexForTime(time: number): number {
+    const nearest_character = Math.round(((time - this.startTime) / this.duration()) * this.total_characters);
+    return this.characters_words[nearest_character];
   }
 
   public getWords(): readonly string[] {
@@ -157,7 +162,15 @@ export class CueSet {
         return false;
       }
 
+      if (event.edge == "start" && event.to_index == this.cues[to_cue].words.length - 1) {
+        return false;
+      }
+
       if (event.edge == "end" && from_cue > to_cue) {
+        return false;
+      }
+
+      if (event.edge == "end" && event.to_index == 0) {
         return false;
       }
 
@@ -171,18 +184,24 @@ export class CueSet {
       // this logic was determined empirically. I believe it has to do with
       // annoying fencepost stuff because we're always joining on "end" but the
       // move edit could go either way, but it's not very intuitive.
+
       if (from_cue > to_cue) {
+        // start backward
         join_start++;
         join_end++;
-      } else if (event.edge == "end" && from_cue == to_cue) {
+      } else if (from_cue < to_cue) {
+        // end forward
+      } else if (event.edge == "end") {
+        // end backward
         join_start++;
         join_end += 2;
       } else {
+        // start forward
         join_start--;
       }
 
       for (let i = join_end - 1; i >= join_start; i--) {
-        if (i < 0) continue;
+        if (i < 0 || i >= this.cues.length) continue;
         this.edit({ type: "join", id: this.cues[i].id, edge: "end" });
       }
 
@@ -322,6 +341,44 @@ export class CueSet {
     }
 
     return true;
+  }
+
+  public previousStart(time: number): number {
+    const current_cue = this.getCueAt(time);
+    if (time != current_cue.startTime) {
+      return current_cue.startTime;
+    }
+
+    const cue_index = this.cues.findIndex((cue) => cue.id == current_cue.id);
+    if (this.cues[cue_index - 1]) {
+      return this.cues[cue_index - 1].startTime;
+    }
+
+    return time;
+  }
+
+  public nextEnd(time: number): number {
+    const current_cue = this.getCueAt(time);
+    if (time != current_cue.endTime) {
+      return current_cue.endTime;
+    }
+
+    const cue_index = this.cues.findIndex((cue) => cue.id == current_cue.id);
+    if (this.cues[cue_index + 1]) {
+      return this.cues[cue_index + 1].endTime;
+    }
+
+    return time;
+  }
+
+  public previousCue(id: string): Cue | undefined {
+    const cue_index = this.cues.findIndex((cue) => cue.id == id);
+    return this.cues[cue_index - 1];
+  }
+
+  public nextCue(id: string): Cue | undefined {
+    const cue_index = this.cues.findIndex((cue) => cue.id == id);
+    return this.cues[cue_index + 1];
   }
 
   public export(): string {

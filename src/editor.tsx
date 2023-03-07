@@ -67,8 +67,7 @@ function CueElement(props: { time: number, cue: Cue, onTimeUpdate: (relative: nu
   let within_word: number | undefined;
 
   if (props.cue.isActive(props.time)) {
-    const nearest_character = Math.round(((props.time - props.cue.startTime) / props.cue.duration()) * props.cue.total_characters);
-    within_word = props.cue.characters_words[nearest_character];
+    within_word = props.cue.indexForTime(props.time);
   }
 
   const elements: JSX.Element[] = [];
