@@ -1,54 +1,103 @@
-body {
-  background-color: #111;
-  color: #eee;
-  font-family: sans-serif;
+:root {
+  --background-dark: #111;
+  --background-light: #333;
+  --foreground-dark: #aaa;
+  --foreground-light: #eee;
+
+  --handle-edge: lightblue;
+  --handle-playhead: orangered;
+  --handle-inactive: #666;
 }
 
-#video {
-  display: block;
-  max-width: 100%;
-  max-height: 60vh;
+body {
+  background-color: var(--background-dark);
+  color: var(--foreground-light);
+  font-family: sans-serif;
+  margin: 0;
 }
 
 #container {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  grid-template-rows: min-content min-content 1fr;
+  grid-template-areas:
+    "header header"
+    "video captions"
+    "cue captions"
+  ;
+  height: calc(100vh - 0.5rem);
+  padding: 0.25rem;
 }
 
-.cue-active {
-  color: white;
+#container>* {
+  background-color: var(--background-light);
+  margin: 0.25rem;
+  padding: 0.5rem;
 }
 
 .cue {
-  color: gray;
+  color: var(--foreground-dark);
   cursor: default;
   user-select: none;
 }
 
+.cue-active {
+  color: var(--foreground-light);
+}
+
 .playhead {
-  color: orangered;
+  color: var(--handle-playhead);
 }
 
 .inactive-handle {
-  color: #333;
+  color: var(--handle-inactive);
 }
 
 .cue-boundary {
-  color: lightblue;
+  color: var(--handle-edge);
   cursor: grab;
 
 }
 
 #cue-textarea {
-  width: 90%;
+  width: 100%;
   resize: none;
 }
 
 #waveform {
-  width: 90%;
+  width: 100%;
+}
+
+#video-container {
+  grid-area: video;
+  background-color: var(--background-light);
+}
+
+#video {
+  display: block;
+  width: 100%;
+  max-height: 60vh;
 }
 
 #editor {
-  max-height: 90vh;
+  grid-area: captions;
   overflow-y: scroll;
+}
+
+#header {
+  grid-area: header;
+
+}
+
+#cue-editor {
+  grid-area: cue;
+}
+
+button {
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
+}
+
+button:first-child {
+  margin-left: 0;
 }

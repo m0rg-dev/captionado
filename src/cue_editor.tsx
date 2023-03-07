@@ -177,10 +177,11 @@ export default function CueEditor(props: { time: TimeInfo, cues: CueSet, audio: 
   }
 
   return (<div id="cue-editor">
-    Timing: {vtt_timestamp(current_cue.startTime)} --&gt; {vtt_timestamp(current_cue.endTime)}<br />
-    <button onClick={gap}>Add Gap</button><br />
-    Contents:<br />
-    {textarea}
-    <Waveform url={props.audio} time={props.time} cues={props.cues} onEdit={props.onEdit} onTimeUpdate={props.onTimeUpdate} />
+    <div>
+      Timing: {vtt_timestamp(current_cue.startTime)} --&gt; {vtt_timestamp(current_cue.endTime)}<br />
+      Contents:<br />
+      {textarea}
+      <Waveform url={props.audio} time={props.time} cues={props.cues} onEdit={props.onEdit} onTimeUpdate={props.onTimeUpdate} />
+    </div>
   </div>);
 }

@@ -47,15 +47,13 @@ export default function Player(props: {
   })
 
   return (
-    <div>
-      <video
-        id="video"
-        controls
-        src={props.video}
-        ref={videoRef}
-        onTimeUpdate={updateTime}
-        onCanPlay={updateMaxTime}
-      />
-    </div>
+    <video
+      id="video"
+      controls
+      src={props.video}
+      ref={videoRef}
+      onTimeUpdate={updateTime}
+      onCanPlay={updateMaxTime}
+    />
   );
 }

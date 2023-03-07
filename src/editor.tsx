@@ -91,7 +91,7 @@ function CueElement(props: { time: number, cue: Cue, onTimeUpdate: (relative: nu
     > {separator} {props.cue.words[index]} </span>);
   }
 
-  return <tr className={props.cue.isActive(props.time) ? "cue cue-active" : "cue"}>
+  return <tr className={props.cue.isActive(props.time) ? "cue-active cue" : "cue"}>
     <td>{props.cue.startTime.toFixed(3)}</td>
     <td>{props.cue.endTime.toFixed(3)}</td>
     <td>{(props.cue.total_characters / props.cue.duration()).toFixed(1)}</td>
@@ -118,9 +118,7 @@ function CueList(props: { time: number, cues: CueSet, onTimeUpdate: (time: numbe
 
 export default function Editor(props: { time: number, cues: CueSet, onTimeUpdate: (time: number) => void, onEdit: (event: EditEvent) => void }) {
   return (
-    <div id="editor">
-      <div>
-      </div>
+    <div>
       <CueList cues={props.cues} time={props.time} onTimeUpdate={props.onTimeUpdate} onEdit={props.onEdit} />
     </div>
   )

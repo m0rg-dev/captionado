@@ -51,6 +51,8 @@ export default function App() {
   const [time, setTime] = React.useState<TimeInfo>({ current: 0.0, maximum: 0.0 });
   const [history, setHistory] = React.useState(new History([new CueSet()], 0));
 
+  const current_cue = history.tip().getCueAt(time.current);
+
   function loadVideo(event: React.ChangeEvent<HTMLInputElement>) {
     if (event.currentTarget.files === null) {
       return;
@@ -158,35 +160,40 @@ export default function App() {
     handleEdit({ type: "reflow" });
   }
 
+  function gap() { handleEdit({ type: "gap", id: current_cue.id }); }
+
   return (
     <div id="container">
-      <div>
+      <div id="header">
+        Video: <input type="file" accept="video/*" onChange={loadVideo} /><br />
+        Captions: <input type="file" accept="text/vtt" onChange={loadTitles} /> <button onClick={download}>Download</button><br />
+        Audio: <input type="file" accept="audio/*" onChange={loadWaveform} /><br />
+      </div>
+      <div id="video-container">
         <Player
           time={time}
           cues={history.tip()}
           video={video}
           onTimeUpdate={setTime}
         />
-        <CueEditor
-          time={time}
-          cues={history.tip()}
-          audio={audio}
-          onEdit={handleEdit}
-          onTimeUpdate={setTime}
-        />
       </div>
-      <div>
-        <div id="inputs">
-          Video: <input type="file" accept="video/*" onChange={loadVideo} /><br />
-          Captions: <input type="file" accept="text/vtt" onChange={loadTitles} /> <button onClick={download}>Download</button><br />
-          Audio: <input type="file" accept="audio/*" onChange={loadWaveform} /><br />
+      <div id="editor">
+        <div>
           <button onClick={undo} disabled={history.position == 0}>Undo</button>
           <button onClick={redo} disabled={history.position >= history.history.length - 1}>Redo</button>
           |
           <button onClick={reflow}>Reflow</button>
+          <button onClick={gap}>Add Gap</button><br />
         </div>
         <Editor time={time.current} cues={history.tip()} onTimeUpdate={setPlayhead} onEdit={handleEdit} />
       </div>
+      <CueEditor
+        time={time}
+        cues={history.tip()}
+        audio={audio}
+        onEdit={handleEdit}
+        onTimeUpdate={setTime}
+      />
     </div>
   )
 }
