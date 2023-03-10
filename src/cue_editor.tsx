@@ -4,7 +4,7 @@ import RegionsPlugin, { Region, RegionParams } from "wavesurfer.js/src/plugin/re
 import { TimeInfo } from "./app";
 
 import { CueSet, EditEvent } from "./cue_set";
-import { vtt_timestamp } from "./utils";
+import { vttTimestamp } from "./utils";
 
 type EditState = {
   "state": "locked",
@@ -163,7 +163,7 @@ export default function CueEditor(props: { time: TimeInfo, cues: CueSet, audio: 
       textarea = <textarea id="cue-textarea" value={editState.text} onChange={updateContents}></textarea>;
       break;
     case "locked":
-      textarea = <textarea id="cue-textarea" value={current_cue.getWords().join(" ")} onChange={updateContents}></textarea>;
+      textarea = <textarea id="cue-textarea" value={current_cue.text()} onChange={updateContents}></textarea>;
       break;
     case "no_cue":
       return (
@@ -175,7 +175,7 @@ export default function CueEditor(props: { time: TimeInfo, cues: CueSet, audio: 
 
   return (<div id="cue-editor">
     <div>
-      Timing: {vtt_timestamp(current_cue.startTime)} --&gt; {vtt_timestamp(current_cue.endTime)}<br />
+      Timing: {vttTimestamp(current_cue.startTime)} --&gt; {vttTimestamp(current_cue.endTime)}<br />
       Contents:<br />
       {textarea}
       <Waveform url={props.audio} time={props.time} cues={props.cues} onEdit={props.onEdit} onTimeUpdate={props.onTimeUpdate} />
