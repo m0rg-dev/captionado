@@ -116,7 +116,7 @@ export default function App() {
     if (!file) return;
 
     const reader = new FileReader();
-    const contents: string = await new Promise((res, rej) => {
+    const contents: string = await new Promise((res) => {
       reader.addEventListener('load', (event) => {
         if (typeof event.target?.result !== "string") {
           throw new Error("can't happen!");
@@ -213,7 +213,7 @@ export default function App() {
       let start = current_cue.startTime;
       let end = current_cue.endTime;
 
-      let offset = direction == "earlier" ? -0.1 : 0.1;
+      const offset = direction == "earlier" ? -0.1 : 0.1;
       if (edge == "start") start += offset;
       else end += offset;
 
@@ -289,7 +289,7 @@ export default function App() {
         }
         break;
 
-      case "i":
+      case "i": {
         if (!current_cue) break;
 
         const previous_cue = history.tip().previousCue(current_cue.id);
@@ -302,6 +302,7 @@ export default function App() {
           }
         }
         break;
+      }
 
       // editing (join / split)
       case "z":
@@ -310,7 +311,7 @@ export default function App() {
         handleEdit({ type: "join", id: current_cue.id, edge: "start" });
         break;
 
-      case "x":
+      case "x": {
         if (!current_cue) break;
         const targetIndex = current_cue.indexForTime(time.current);
         if (!targetIndex) {
@@ -319,6 +320,7 @@ export default function App() {
 
         handleEdit({ type: "split", id: current_cue.id, index: targetIndex });
         break;
+      }
 
       case "c":
         if (!current_cue) break;

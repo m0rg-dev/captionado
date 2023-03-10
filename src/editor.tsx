@@ -10,7 +10,7 @@ function CueElement(props: { time: number, cue: Cue, onTimeUpdate: (relative: nu
   function dropHandle(e: React.DragEvent, index: number) {
     e.preventDefault();
 
-    let event = JSON.parse(e.dataTransfer.getData("application/x-cue")) as EditEvent;
+    const event = JSON.parse(e.dataTransfer.getData("application/x-cue")) as EditEvent;
     if (event.type == "move") {
       event.to_id = props.cue.id;
       event.to_index = index;
@@ -115,7 +115,7 @@ function CueList(props: { time: number, cues: CueSet, onTimeUpdate: (time: numbe
       <th>cps</th>
       <th>content</th>
     </tr>
-    {props.cues?.getCues().map((cue) => <CueElement cue={cue} time={props.time} onTimeUpdate={(time) => props.onTimeUpdate(cue.startTime + time)} onEdit={props.onEdit} />)}
+    {props.cues?.getCues().map((cue) => <CueElement key={cue.id} cue={cue} time={props.time} onTimeUpdate={(time) => props.onTimeUpdate(cue.startTime + time)} onEdit={props.onEdit} />)}
   </table>;
 }
 

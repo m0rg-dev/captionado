@@ -138,13 +138,13 @@ export class CueSet {
   }
 
   public shallowCopy(): CueSet {
-    let rc = new CueSet();
+    const rc = new CueSet();
     rc.cues = this.cues;
     return rc;
   }
 
   public clone(): CueSet {
-    let rc = new CueSet();
+    const rc = new CueSet();
     for (const cue of this.cues) {
       rc.addCue(cue.clone());
     }
