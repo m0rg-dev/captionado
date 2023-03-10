@@ -299,6 +299,57 @@ describe('move edit', () => {
   });
 });
 
-test('empty array', () => {
-  new Cue("0", 0, 1, []);
-})
+describe('Cue methods', () => {
+  test('empty array', () => {
+    new Cue("0", 0, 1, []);
+  });
+
+  test('single-cue clone', () => {
+    const original = new Cue("foo", 0, 1, ["bar"]);
+    const copy = original.clone();
+    expect(copy).toEqual(original);
+  });
+
+  test("cue text reassembly", () => {
+    const cue = new Cue("", 0, 0, ["foo", "bar", "baz"]);
+    expect(cue.text()).toEqual("foo bar baz");
+
+    const empty = new Cue("", 0, 0, []);
+    expect(empty.text()).toEqual("");
+  });
+
+  test("isActive endpoints", () => {
+    const cue = new Cue("", 1, 2, []);
+
+    // easy stuff
+    expect(cue.isActive(1.5)).toBeTruthy();
+    expect(cue.isActive(0)).toBeFalsy();
+    expect(cue.isActive(3)).toBeFalsy();
+
+    // cue start is inclusive
+    expect(cue.isActive(1)).toBeTruthy();
+
+    // cue end is exclusive
+    expect(cue.isActive(2)).toBeFalsy();
+
+  });
+
+  test("timeForIndex", () => {
+    const cue = new Cue("", 0, 1, ["foo", "bar"]);
+
+    expect(cue.timeForIndex(-1)).toEqual(0);
+    expect(cue.timeForIndex(0)).toEqual(0);
+    expect(cue.timeForIndex(1)).toEqual(0.5);
+    expect(cue.timeForIndex(2)).toEqual(1);
+    expect(cue.timeForIndex(3)).toEqual(1);
+  });
+
+  test("indexForTime", () => {
+    const cue = new Cue("", 0, 1, ["foo", "bar"]);
+    expect(cue.indexForTime(-1)).toBeUndefined();
+    expect(cue.indexForTime(0)).toEqual(0);
+    expect(cue.indexForTime(0.5)).toEqual(1);
+    expect(cue.indexForTime(1)).toEqual(2);
+    expect(cue.indexForTime(2)).toBeUndefined();
+  })
+});

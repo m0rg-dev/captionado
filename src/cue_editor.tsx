@@ -163,7 +163,7 @@ export default function CueEditor(props: { time: TimeInfo, cues: CueSet, audio: 
       textarea = <textarea id="cue-textarea" value={editState.text} onChange={updateContents}></textarea>;
       break;
     case "locked":
-      textarea = <textarea id="cue-textarea" value={current_cue.getWords().join(" ")} onChange={updateContents}></textarea>;
+      textarea = <textarea id="cue-textarea" value={current_cue.text()} onChange={updateContents}></textarea>;
       break;
     case "no_cue":
       return (

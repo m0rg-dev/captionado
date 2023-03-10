@@ -47,10 +47,10 @@ export class Cue {
   startTime: number;
   endTime: number;
 
-  words: string[];
-  total_characters: number;
-  characters_words: number[];
-  words_characters: number[];
+  readonly words: string[];
+  readonly total_characters: number;
+  readonly characters_words: number[];
+  readonly words_characters: number[];
 
   public constructor(id: string, startTime: number, endTime: number, contents: string[]) {
     this.id = id;
@@ -71,6 +71,7 @@ export class Cue {
 
       const current_word = this.words[current_word_index];
 
+      /* c8 ignore next 3 */
       if (current_word === undefined) {
         throw new Error("ran off the end of this.words in cue constructor; shouldn't happen");
       }
@@ -81,15 +82,12 @@ export class Cue {
         chars_this_word = 0;
       }
     }
+    this.characters_words[this.total_characters] = this.words.length;
   }
 
   public clone(): Cue {
     // TODO could we optimize here by copying the generated fields?
     return new Cue(this.id, this.startTime, this.endTime, [...this.words]);
-  }
-
-  public toString(): string {
-    return `${this.startTime.toFixed(3)} -> ${this.endTime.toFixed(3)}: ${this.words.join(" ")}`;
   }
 
   public text(): string {
@@ -121,10 +119,6 @@ export class Cue {
   public indexForTime(time: number): number | undefined {
     const nearest_character = Math.round(((time - this.startTime) / this.duration()) * this.total_characters);
     return this.characters_words[nearest_character];
-  }
-
-  public getWords(): readonly string[] {
-    return this.words
   }
 }
 
@@ -420,7 +414,7 @@ export class CueSet {
     const chunks = ["WEBVTT"];
 
     for (const cue of this.cues) {
-      chunks.push(`${vttTimestamp(cue.startTime)} --> ${vttTimestamp(cue.endTime)}\n${cue.words.join(" ")}`);
+      chunks.push(`${vttTimestamp(cue.startTime)} --> ${vttTimestamp(cue.endTime)}\n${cue.text()}`);
     }
 
     return chunks.join("\n\n");
