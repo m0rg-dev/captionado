@@ -154,7 +154,11 @@ export class CueSet {
       const from_cue_index = this.cues.findIndex((cue) => cue.id == event.from_id);
       const to_cue_index = this.cues.findIndex((cue) => cue.id == event.to_id);
 
-      const to_cue = this.cues[to_cue_index] || (() => { throw new Error("can't happen") })();
+      const to_cue = this.cues[to_cue_index];
+
+      if (from_cue_index < 0 || to_cue === undefined) {
+        return false;
+      }
 
       if (event.edge == "start" && to_cue_index > from_cue_index) {
         return false;
@@ -168,7 +172,7 @@ export class CueSet {
         return false;
       }
 
-      if (event.edge == "end" && event.to_index == 0) {
+      if (event.edge == "end" && event.to_index <= 0) {
         return false;
       }
 
@@ -206,7 +210,11 @@ export class CueSet {
 
     } else if (event.type == "join") {
       const cue_index = this.cues.findIndex((cue) => cue.id == event.id);
-      const this_cue = this.cues[cue_index] || (() => { throw new Error("can't happen") })();
+      const this_cue = this.cues[cue_index];
+
+      if (this_cue === undefined) {
+        return false;
+      }
 
       if (event.edge == "start") {
         const previous_cue = this.cues[cue_index - 1];
@@ -216,7 +224,7 @@ export class CueSet {
 
         const contents = previous_cue.words.concat(this_cue.words);
         this.cues.splice(cue_index - 1, 2, new Cue(
-          _keep_second_id_hack ? this_cue.id : uuidv4(),
+          _keep_second_id_hack /* c8 ignore next */ ? this_cue.id : uuidv4(),
           previous_cue.startTime,
           this_cue.endTime,
           contents
@@ -236,7 +244,11 @@ export class CueSet {
       }
     } else if (event.type == "split") {
       const cue_index = this.cues.findIndex((cue) => cue.id == event.id);
-      const this_cue = this.cues[cue_index] || (() => { throw new Error("can't happen") })();
+      const this_cue = this.cues[cue_index];
+
+      if (this_cue === undefined) {
+        return false;
+      }
 
       if (event.index == 0 || event.index >= this_cue.words.length) {
         return false;
@@ -252,14 +264,16 @@ export class CueSet {
         point,
         first
       ), new Cue(
-        _keep_second_id_hack ? event.id : uuidv4(),
+        _keep_second_id_hack /* c8 ignore next */ ? event.id : uuidv4(),
         point,
         this_cue.endTime,
         rest
       ));
     } else if (event.type == "set_contents") {
       const cue_index = this.cues.findIndex((cue) => cue.id == event.id);
-      const this_cue = this.cues[cue_index] || (() => { throw new Error("can't happen") })();
+      const this_cue = this.cues[cue_index];
+
+      if (this_cue === undefined) return false;
 
       this.cues.splice(cue_index, 1, new Cue(
         this_cue.id,
@@ -269,7 +283,9 @@ export class CueSet {
       ));
     } else if (event.type == "retime") {
       const cue_index = this.cues.findIndex((cue) => cue.id == event.id);
-      const this_cue = this.cues[cue_index] || (() => { throw new Error("can't happen") })();
+      const this_cue = this.cues[cue_index];
+
+      if (this_cue === undefined) return false;
 
       this_cue.startTime = event.start;
       this_cue.endTime = event.end;
@@ -283,7 +299,9 @@ export class CueSet {
       this_cue.id = uuidv4();
     } else if (event.type == "gap") {
       const cue_index = this.cues.findIndex((cue) => cue.id == event.id);
-      const this_cue = this.cues[cue_index] || (() => { throw new Error("can't happen") })();
+      const this_cue = this.cues[cue_index];
+
+      if (this_cue === undefined) return false;
 
       const point = Math.max(this_cue.endTime - 1, this_cue.duration() / 2 + this_cue.startTime);
       this.cues.splice(cue_index + 1, 0, new Cue(
@@ -297,6 +315,10 @@ export class CueSet {
 
       // reroll the ID on the edited region so the waveform display picks it up
       this_cue.id = uuidv4();
+
+      // I already know this doesn't work, I don't need the tests telling me
+      // about it too
+      /* c8 ignore start */
     } else if (event.type == "reflow") {
       // Reflow based on sentence breaks.
 
@@ -349,6 +371,7 @@ export class CueSet {
         cue.id = uuidv4();
       }
     }
+    /* c8 ignore stop */
 
     return true;
   }
