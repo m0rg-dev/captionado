@@ -175,7 +175,7 @@ export class CueSet {
         return false;
       }
 
-      if (event.edge == "start" && event.to_index == to_cue.words.length - 1) {
+      if (event.edge == "start" && event.to_index >= to_cue.words.length) {
         return false;
       }
 
