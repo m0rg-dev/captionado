@@ -41,12 +41,16 @@ class History {
   }
 
   tip(): CueSet {
-    return this.history[this.position];
+    const rc = this.history[this.position];
+    if (!rc) {
+      throw new Error("CueSet position outside array; shouldn't happen");
+    }
+    return rc;
   }
 }
 
 export default function App() {
-  const videoRef = React.useRef<HTMLVideoElement>();
+  const videoRef = React.useRef<HTMLVideoElement>(null);
 
   const [video, setVideo] = React.useState<string>();
   const [audio, setAudio] = React.useState<string>();
@@ -54,7 +58,7 @@ export default function App() {
   const [history, setHistory] = React.useState(new History([new CueSet()], 0));
   const [savedPosition, setSavedPosition] = React.useState(0);
 
-  const current_cue = history.tip().getCueAt(time.current);
+  const current_cue = history.tip()?.getCueAt(time.current);
 
   function loadVideo(event: React.ChangeEvent<HTMLInputElement>) {
     if (event.currentTarget.files === null) {
@@ -62,15 +66,20 @@ export default function App() {
     }
 
     const file = event.currentTarget.files[0];
-    setVideo(URL.createObjectURL(file));
+    if (file) {
+      setVideo(URL.createObjectURL(file));
+    }
   }
 
-  function loadWaveform(e: React.ChangeEvent<HTMLInputElement>) {
-    if (e.currentTarget.files === null) {
+  function loadWaveform(event: React.ChangeEvent<HTMLInputElement>) {
+    if (event.currentTarget.files === null) {
       return;
     }
 
-    setAudio(URL.createObjectURL(e.currentTarget.files[0]));
+    const file = event?.currentTarget.files[0];
+    if (file) {
+      setAudio(URL.createObjectURL(file));
+    }
   }
 
   function handleEdit(event: EditEvent) {
@@ -104,6 +113,7 @@ export default function App() {
     if (event.currentTarget.files === null) return;
 
     const file = event.currentTarget.files[0];
+    if (!file) return;
 
     const reader = new FileReader();
     const contents: string = await new Promise((res, rej) => {
@@ -129,8 +139,13 @@ export default function App() {
       }
 
       const lines = chunk.split("\n")
-      if (lines[0].includes(" --> ")) {
+      if (lines[0] && lines[0].includes(" --> ")) {
         const [startTC, endTC] = lines[0].split(" --> ").map(parseTimecode);
+        if (startTC === undefined || endTC === undefined) {
+          // if it contains the separator we can split it on the separator
+          throw new Error("can't happen");
+        }
+
         lines.shift();
         const rest = lines.join("\n");
 
@@ -164,9 +179,15 @@ export default function App() {
     handleEdit({ type: "reflow" });
   }
 
-  function gap() { handleEdit({ type: "gap", id: current_cue.id }); }
+  function gap() {
+    if (current_cue) {
+      handleEdit({ type: "gap", id: current_cue.id });
+    }
+  }
 
   function keyboardMove(edge: "start" | "end", direction: "earlier" | "later", mode: "word" | "nudge") {
+    if (!current_cue) return;
+
     if (mode == "word") {
       let to_cue;
       let to_index;
@@ -178,14 +199,14 @@ export default function App() {
         to_cue = current_cue;
       }
 
+      if (!to_cue) return;
+
       if (direction == "later") {
         to_index = 1;
       } else {
         to_index = to_cue.words.length - 1;
         if (edge == "start") to_index--;
       }
-
-      if (!to_cue) return;
 
       handleEdit({ type: "move", edge, from_id: current_cue.id, to_id: to_cue.id, to_index });
     } else {
@@ -200,11 +221,11 @@ export default function App() {
     }
   }
 
-  function handleKeypress(this: Document, e: KeyboardEvent) {
+  function handleKeypress(this: Window, e: KeyboardEvent) {
     // special cases: in the textbox
-    if (document.activeElement.id == "cue-textarea") {
+    if (document.activeElement?.id == "cue-textarea") {
       if (e.key == "Escape") {
-        document.getElementById("cue-textarea").blur();
+        document.getElementById("cue-textarea")?.blur();
       }
       return;
     }
@@ -222,15 +243,15 @@ export default function App() {
 
     let shouldCancel = !((e.metaKey || e.ctrlKey));
 
-    const index = current_cue.indexForTime(time.current);
+    const index = current_cue?.indexForTime(time.current);
 
     switch (e.key.toLowerCase()) {
       // playback controls
       case "k":
-        if (videoRef.current.paused) {
+        if (videoRef.current?.paused) {
           videoRef.current.play()
         } else {
-          videoRef.current.pause()
+          videoRef.current?.pause()
         }
         break;
 
@@ -243,6 +264,8 @@ export default function App() {
         break;
 
       case "u":
+        if (!current_cue || index === undefined) break;
+
         if (index > 1) {
           setTime({ current: current_cue.timeForIndex(index - 1), maximum: time.maximum });
         } else {
@@ -254,6 +277,8 @@ export default function App() {
         break;
 
       case "o":
+        if (!current_cue || index === undefined) break;
+
         if (index < current_cue.words.length) {
           setTime({ current: current_cue.timeForIndex(index + 1), maximum: time.maximum });
         } else {
@@ -265,25 +290,39 @@ export default function App() {
         break;
 
       case "i":
+        if (!current_cue) break;
+
         const previous_cue = history.tip().previousCue(current_cue.id);
         if (previous_cue) {
           setTime({ current: previous_cue.startTime, maximum: time.maximum });
           // need to do this synchronously or we'll risk briefly playing from the wrong time
-          videoRef.current.currentTime = previous_cue.startTime;
-          videoRef.current.play();
+          if (videoRef.current) {
+            videoRef.current.currentTime = previous_cue.startTime;
+            videoRef.current.play();
+          }
         }
         break;
 
       // editing (join / split)
       case "z":
+        if (!current_cue) break;
+
         handleEdit({ type: "join", id: current_cue.id, edge: "start" });
         break;
 
       case "x":
-        handleEdit({ type: "split", id: current_cue.id, index: current_cue.indexForTime(time.current) });
+        if (!current_cue) break;
+        const targetIndex = current_cue.indexForTime(time.current);
+        if (!targetIndex) {
+          throw new Error("current time not found in current cue; shouldn't happen");
+        }
+
+        handleEdit({ type: "split", id: current_cue.id, index: targetIndex });
         break;
 
       case "c":
+        if (!current_cue) break;
+
         handleEdit({ type: "join", id: current_cue.id, edge: "end" });
         break;
 
@@ -304,7 +343,7 @@ export default function App() {
       // editing (enter textbox)
       case " ":
         // TODO this is bad React
-        document.getElementById("cue-textarea").focus();
+        document.getElementById("cue-textarea")?.focus();
         break;
 
       default:

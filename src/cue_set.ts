@@ -61,17 +61,23 @@ export class Cue {
 
     this.characters_words = [];
     this.words_characters = [];
-    let current_word = 0;
+    let current_word_index = 0;
     let chars_this_word = 0;
     let chars_all_words = 0;
     for (let i = 0; i < this.total_characters; i++) {
       chars_all_words++;
       chars_this_word++;
-      this.characters_words[i] = current_word;
+      this.characters_words[i] = current_word_index;
 
-      if (chars_this_word >= this.words[current_word].length) {
-        this.words_characters[current_word] = chars_all_words;
-        current_word++;
+      const current_word = this.words[current_word_index];
+
+      if (current_word === undefined) {
+        throw new Error("ran off the end of this.words in cue constructor; shouldn't happen");
+      }
+
+      if (chars_this_word >= current_word.length) {
+        this.words_characters[current_word_index] = chars_all_words;
+        current_word_index++;
         chars_this_word = 0;
       }
     }
@@ -99,15 +105,20 @@ export class Cue {
   }
 
   public timeForIndex(index: number): number {
-    if (index == 0) {
+    if (index <= 0) {
       return this.startTime;
     }
 
     const character = this.words_characters[index - 1];
+    if (character === undefined) {
+      // went off the end
+      return this.endTime;
+    }
+
     return (character / this.total_characters) * this.duration() + this.startTime;
   }
 
-  public indexForTime(time: number): number {
+  public indexForTime(time: number): number | undefined {
     const nearest_character = Math.round(((time - this.startTime) / this.duration()) * this.total_characters);
     return this.characters_words[nearest_character];
   }
@@ -149,24 +160,26 @@ export class CueSet {
     return this.cues;
   }
 
-  public getCueAt(time: number): Cue | null {
+  public getCueAt(time: number): Cue | undefined {
     return this.cues.filter((cue) => cue.isActive(time))[0]
   }
 
   public edit(event: EditEvent, _keep_second_id_hack = false): boolean {
     if (event.type == "move") {
-      let from_cue = this.cues.findIndex((cue) => cue.id == event.from_id);
-      let to_cue = this.cues.findIndex((cue) => cue.id == event.to_id);
+      const from_cue_index = this.cues.findIndex((cue) => cue.id == event.from_id);
+      const to_cue_index = this.cues.findIndex((cue) => cue.id == event.to_id);
 
-      if (event.edge == "start" && to_cue > from_cue) {
+      const to_cue = this.cues[to_cue_index] || (() => { throw new Error("can't happen") })();
+
+      if (event.edge == "start" && to_cue_index > from_cue_index) {
         return false;
       }
 
-      if (event.edge == "start" && event.to_index == this.cues[to_cue].words.length - 1) {
+      if (event.edge == "start" && event.to_index == to_cue.words.length - 1) {
         return false;
       }
 
-      if (event.edge == "end" && from_cue > to_cue) {
+      if (event.edge == "end" && from_cue_index > to_cue_index) {
         return false;
       }
 
@@ -174,10 +187,10 @@ export class CueSet {
         return false;
       }
 
-      let join_start = Math.min(from_cue, to_cue);
-      let join_end = Math.max(from_cue, to_cue);
+      let join_start = Math.min(from_cue_index, to_cue_index);
+      let join_end = Math.max(from_cue_index, to_cue_index);
 
-      this.edit({ type: "split", id: this.cues[to_cue].id, index: event.to_index });
+      this.edit({ type: "split", id: to_cue.id, index: event.to_index });
 
       // adjust join range based on inputs.
       //
@@ -185,11 +198,11 @@ export class CueSet {
       // annoying fencepost stuff because we're always joining on "end" but the
       // move edit could go either way, but it's not very intuitive.
 
-      if (from_cue > to_cue) {
+      if (from_cue_index > to_cue_index) {
         // start backward
         join_start++;
         join_end++;
-      } else if (from_cue < to_cue) {
+      } else if (from_cue_index < to_cue_index) {
         // end forward
       } else if (event.edge == "end") {
         // end backward
@@ -201,92 +214,104 @@ export class CueSet {
       }
 
       for (let i = join_end - 1; i >= join_start; i--) {
-        if (i < 0 || i >= this.cues.length) continue;
-        this.edit({ type: "join", id: this.cues[i].id, edge: "end" });
+        const this_cue = this.cues[i];
+        if (this_cue === undefined) continue;
+        this.edit({ type: "join", id: this_cue.id, edge: "end" });
       }
 
     } else if (event.type == "join") {
-      let cue_index = this.cues.findIndex((cue) => cue.id == event.id);
+      const cue_index = this.cues.findIndex((cue) => cue.id == event.id);
+      const this_cue = this.cues[cue_index] || (() => { throw new Error("can't happen") })();
 
       if (event.edge == "start") {
-        if (cue_index == 0) {
+        const previous_cue = this.cues[cue_index - 1];
+        if (!previous_cue) {
           return false;
         }
 
-        const contents = this.cues[cue_index - 1].words.concat(this.cues[cue_index].words);
+        const contents = previous_cue.words.concat(this_cue.words);
         this.cues.splice(cue_index - 1, 2, new Cue(
-          _keep_second_id_hack ? this.cues[cue_index].id : uuidv4(),
-          this.cues[cue_index - 1].startTime,
-          this.cues[cue_index].endTime,
+          _keep_second_id_hack ? this_cue.id : uuidv4(),
+          previous_cue.startTime,
+          this_cue.endTime,
           contents
         ));
       } else {
-        if (cue_index >= this.cues.length - 1) {
+        const next_cue = this.cues[cue_index + 1];
+        if (!next_cue) {
           return false;
         }
+
 
         this.edit({
           ...event,
           edge: "start",
-          id: this.cues[cue_index + 1].id,
+          id: next_cue.id,
         }, _keep_second_id_hack);
       }
     } else if (event.type == "split") {
       const cue_index = this.cues.findIndex((cue) => cue.id == event.id);
+      const this_cue = this.cues[cue_index] || (() => { throw new Error("can't happen") })();
 
-      if (event.index == 0 || event.index >= this.cues[cue_index].words.length) {
+      if (event.index == 0 || event.index >= this_cue.words.length) {
         return false;
       }
 
-      const first = this.cues[cue_index].words.slice(0, event.index);
-      const rest = this.cues[cue_index].words.slice(event.index);
-      const point = this.cues[cue_index].timeForIndex(event.index);
+      const first = this_cue.words.slice(0, event.index);
+      const rest = this_cue.words.slice(event.index);
+      const point = this_cue.timeForIndex(event.index);
 
       this.cues.splice(cue_index, 1, new Cue(
         uuidv4(),
-        this.cues[cue_index].startTime,
+        this_cue.startTime,
         point,
         first
       ), new Cue(
         _keep_second_id_hack ? event.id : uuidv4(),
         point,
-        this.cues[cue_index].endTime,
+        this_cue.endTime,
         rest
       ));
     } else if (event.type == "set_contents") {
       const cue_index = this.cues.findIndex((cue) => cue.id == event.id);
+      const this_cue = this.cues[cue_index] || (() => { throw new Error("can't happen") })();
 
       this.cues.splice(cue_index, 1, new Cue(
-        this.cues[cue_index].id,
-        this.cues[cue_index].startTime,
-        this.cues[cue_index].endTime,
+        this_cue.id,
+        this_cue.startTime,
+        this_cue.endTime,
         event.contents
       ));
     } else if (event.type == "retime") {
       const cue_index = this.cues.findIndex((cue) => cue.id == event.id);
+      const this_cue = this.cues[cue_index] || (() => { throw new Error("can't happen") })();
 
-      this.cues[cue_index].startTime = event.start;
-      this.cues[cue_index].endTime = event.end;
+      this_cue.startTime = event.start;
+      this_cue.endTime = event.end;
 
-      if (this.cues[cue_index - 1]) this.cues[cue_index - 1].endTime = event.start;
-      if (this.cues[cue_index + 1]) this.cues[cue_index + 1].startTime = event.end;
+      const previous_cue = this.cues[cue_index - 1];
+      const next_cue = this.cues[cue_index + 1];
 
-      this.cues[cue_index].id = uuidv4();
+      if (previous_cue) previous_cue.endTime = event.start;
+      if (next_cue) next_cue.startTime = event.end;
+
+      this_cue.id = uuidv4();
     } else if (event.type == "gap") {
       const cue_index = this.cues.findIndex((cue) => cue.id == event.id);
+      const this_cue = this.cues[cue_index] || (() => { throw new Error("can't happen") })();
 
-      const point = Math.max(this.cues[cue_index].endTime - 1, this.cues[cue_index].duration() / 2 + this.cues[cue_index].startTime);
+      const point = Math.max(this_cue.endTime - 1, this_cue.duration() / 2 + this_cue.startTime);
       this.cues.splice(cue_index + 1, 0, new Cue(
         uuidv4(),
         point,
-        this.cues[cue_index].endTime,
+        this_cue.endTime,
         []
       ));
 
-      this.cues[cue_index].endTime = point;
+      this_cue.endTime = point;
 
       // reroll the ID on the edited region so the waveform display picks it up
-      this.cues[cue_index].id = uuidv4();
+      this_cue.id = uuidv4();
     } else if (event.type == "reflow") {
       // Reflow based on sentence breaks.
 
@@ -295,7 +320,7 @@ export class CueSet {
       for (const cue of this.cues) {
         let offset = 0;
         for (const index in cue.words) {
-          if (cue.words[index].match(/[.!?]$/)) {
+          if (cue.words[index]?.match(/[.!?]$/)) {
             const split_index = Number.parseInt(index) + 1 - offset;
             edits.push({ type: "split", id: cue.id, index: split_index });
             offset = Number.parseInt(index) + 1;
@@ -311,7 +336,7 @@ export class CueSet {
       edits = [];
 
       for (const cue of this.cues) {
-        if (cue.words.length && cue.words[cue.words.length - 1].match(/[^.!?]$/)) {
+        if (cue.words.length && cue.words[cue.words.length - 1]?.match(/[^.!?]$/)) {
           edits.push({ type: "join", id: cue.id, edge: "end" });
         }
       }
@@ -345,13 +370,18 @@ export class CueSet {
 
   public previousStart(time: number): number {
     const current_cue = this.getCueAt(time);
+    if (current_cue === undefined) {
+      return time;
+    }
+
     if (time != current_cue.startTime) {
       return current_cue.startTime;
     }
 
     const cue_index = this.cues.findIndex((cue) => cue.id == current_cue.id);
-    if (this.cues[cue_index - 1]) {
-      return this.cues[cue_index - 1].startTime;
+    const previousCue = this.cues[cue_index - 1];
+    if (previousCue) {
+      return previousCue.startTime;
     }
 
     return time;
@@ -359,13 +389,18 @@ export class CueSet {
 
   public nextEnd(time: number): number {
     const current_cue = this.getCueAt(time);
+    if (current_cue === undefined) {
+      return time;
+    }
+
     if (time != current_cue.endTime) {
       return current_cue.endTime;
     }
 
     const cue_index = this.cues.findIndex((cue) => cue.id == current_cue.id);
-    if (this.cues[cue_index + 1]) {
-      return this.cues[cue_index + 1].endTime;
+    const previousCue = this.cues[cue_index + 1];
+    if (previousCue) {
+      return previousCue.endTime;
     }
 
     return time;

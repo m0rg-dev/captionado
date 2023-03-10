@@ -26,12 +26,12 @@ type WaveformState = {
   "state": "loaded"
 };
 
-function Waveform(props: { url: string, cues: CueSet, time: TimeInfo, onEdit: (edit: EditEvent) => void, onTimeUpdate: (time: TimeInfo) => void }) {
-  const waveformRef = React.useRef();
+function Waveform(props: { url: string | undefined, cues: CueSet, time: TimeInfo, onEdit: (edit: EditEvent) => void, onTimeUpdate: (time: TimeInfo) => void }) {
+  const waveformRef = React.useRef<HTMLDivElement>(null);
   const wavesurferRef = React.useRef<WaveSurfer>();
-  const zoomRef = React.useRef<HTMLInputElement>();
+  const zoomRef = React.useRef<HTMLInputElement>(null);
   const [loadedURL, setLoadedURL] = React.useState<string>();
-  const [lastCue, setLastCue] = React.useState<string>();
+  const [lastCue, setLastCue] = React.useState<string>("");
   const [progress, setProgress] = React.useState<WaveformState>({ state: "not_loaded" });
 
   function updateRegion(region: Region) {
@@ -39,8 +39,8 @@ function Waveform(props: { url: string, cues: CueSet, time: TimeInfo, onEdit: (e
       props.onEdit({
         "type": "retime",
         id: region.id,
-        start: wavesurferRef.current.regions.list[region.id].start,
-        end: wavesurferRef.current.regions.list[region.id].end,
+        start: region.start,
+        end: region.end,
       })
     }
   }
@@ -76,10 +76,9 @@ function Waveform(props: { url: string, cues: CueSet, time: TimeInfo, onEdit: (e
 
       const current_cue = props.cues.getCueAt(props.time.current);
 
-      if (lastCue != current_cue.id) {
+      if (current_cue && lastCue != current_cue.id) {
         setLastCue(current_cue.id);
-        if (wavesurferRef.current.regions.list[lastCue])
-          wavesurferRef.current.regions.list[lastCue].remove();
+        wavesurferRef.current.regions.list[lastCue]?.remove();
 
         const params: RegionParams = {
           id: current_cue.id,
@@ -91,7 +90,7 @@ function Waveform(props: { url: string, cues: CueSet, time: TimeInfo, onEdit: (e
         }
 
         if (wavesurferRef.current.regions.list[current_cue.id]) {
-          wavesurferRef.current.regions.list[current_cue.id].update(params);
+          wavesurferRef.current.regions.list[current_cue.id]?.update(params);
         } else {
           wavesurferRef.current.regions.add(params);
         }
@@ -125,13 +124,13 @@ function Waveform(props: { url: string, cues: CueSet, time: TimeInfo, onEdit: (e
   )
 }
 
-export default function CueEditor(props: { time: TimeInfo, cues: CueSet, audio: string, onEdit: (edit: EditEvent) => void, onTimeUpdate: (time: TimeInfo) => void }) {
+export default function CueEditor(props: { time: TimeInfo, cues: CueSet, audio: string | undefined, onEdit: (edit: EditEvent) => void, onTimeUpdate: (time: TimeInfo) => void }) {
   const [editState, setEditState] = React.useState<EditState>({ "state": "no_cue" });
 
   const current_cue = props.cues.getCueAt(props.time.current);
 
   function updateContents(e: React.ChangeEvent<HTMLTextAreaElement>) {
-    if (current_cue !== null) {
+    if (current_cue !== undefined) {
       props.onEdit({ type: "set_contents", id: current_cue.id, contents: e.target.value.split(/\s+/) });
       setEditState({ "state": "editing", "cue_id": current_cue.id, "text": e.target.value.trim() });
     }

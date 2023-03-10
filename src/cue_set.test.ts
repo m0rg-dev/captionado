@@ -1,9 +1,12 @@
 import { Cue, CueSet } from "./cue_set";
 
-function checkCue(cue: Cue, start: number, end: number, ...words: string[]) {
-  expect(cue.words).toEqual(words);
-  expect(cue.startTime).toBeCloseTo(start);
-  expect(cue.endTime).toBeCloseTo(end);
+function checkCue(cue: Cue | undefined, start: number, end: number, ...words: string[]) {
+  expect(cue).not.toBeUndefined();
+  if (cue !== undefined) {
+    expect(cue.words).toEqual(words);
+    expect(cue.startTime).toBeCloseTo(start);
+    expect(cue.endTime).toBeCloseTo(end);
+  }
 }
 
 describe('join edit', () => {

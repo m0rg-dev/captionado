@@ -59,8 +59,12 @@ function CueElement(props: { time: number, cue: Cue, onTimeUpdate: (relative: nu
       })
     } else {
       const character = props.cue.words_characters[index];
-      const time = (character / props.cue.total_characters) * props.cue.duration();
-      props.onTimeUpdate(time);
+      if (character !== undefined) {
+        const time = (character / props.cue.total_characters) * props.cue.duration();
+        props.onTimeUpdate(time);
+      } else {
+        throw new Error("bug I guess?");
+      }
     }
   }
 

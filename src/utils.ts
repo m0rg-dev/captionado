@@ -7,8 +7,8 @@ export function parseTimecode(tc: string): number {
   }
 
   const hours = Number.parseInt(found[1] || "0");
-  const minutes = Number.parseInt(found[2]);
-  const seconds = Number.parseFloat(found[3]);
+  const minutes = Number.parseInt(found[2] || "0");
+  const seconds = Number.parseFloat(found[3] || "0");
 
   return hours * 3600 + minutes * 60 + seconds;
 }

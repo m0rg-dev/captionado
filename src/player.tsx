@@ -5,43 +5,51 @@ import { CueSet } from "./cue_set";
 const Player = React.forwardRef(function Player(props: {
   time: TimeInfo,
   cues: CueSet,
-  video: string,
+  video: string | undefined,
   onTimeUpdate: (time: TimeInfo) => void,
-}, videoRef: React.MutableRefObject<HTMLVideoElement>) {
+}, videoRef: React.Ref<HTMLVideoElement>) {
   const lastTitlesGen = React.useRef<string>();
 
+  // TODO handle callback refs here (this whole section is kind of suspect)
   function updateTime() {
-    if (videoRef.current) {
+    if (typeof videoRef == 'object' && videoRef?.current) {
       props.onTimeUpdate({ current: videoRef.current.currentTime, maximum: props.time.maximum });
     }
   }
 
   function updateMaxTime() {
-    if (videoRef.current) {
+    if (typeof videoRef == 'object' && videoRef?.current) {
       props.onTimeUpdate({ current: videoRef.current.currentTime, maximum: videoRef.current.duration });
     }
   }
 
   React.useEffect(() => {
-    if (videoRef.current && Math.abs(props.time.current - videoRef.current.currentTime) > 0.1) {
-      videoRef.current.currentTime = props.time.current;
-    }
-
-    if (props.cues.id != lastTitlesGen.current) {
-      if (!videoRef.current.textTracks[0]) {
-        const track = videoRef.current.addTextTrack("captions", "Captions");
-        track.mode = "showing";
+    if (typeof videoRef == 'object' && videoRef?.current) {
+      if (Math.abs(props.time.current - videoRef.current.currentTime) > 0.1) {
+        videoRef.current.currentTime = props.time.current;
       }
 
-      for (let i = videoRef.current.textTracks[0].cues.length - 1; i >= 0; i--) {
-        videoRef.current.textTracks[0].removeCue(videoRef.current.textTracks[0].cues[i]);
-      }
+      if (props.cues.id != lastTitlesGen.current) {
+        let track = videoRef.current.textTracks[0];
 
-      for (const cue of props.cues.cues) {
-        videoRef.current.textTracks[0].addCue(new VTTCue(cue.startTime, cue.endTime, cue.text()));
-      }
+        if (!track) {
+          track = videoRef.current.addTextTrack("captions", "Captions");
+          track.mode = "showing";
+        }
 
-      lastTitlesGen.current = props.cues.id;
+        if (track.cues) {
+          for (let i = track.cues.length - 1; i >= 0; i--) {
+            const cue = track.cues[i];
+            if (cue) track.removeCue(cue);
+          }
+        }
+
+        for (const cue of props.cues.cues) {
+          track.addCue(new VTTCue(cue.startTime, cue.endTime, cue.text()));
+        }
+
+        lastTitlesGen.current = props.cues.id;
+      }
     }
   })
 
