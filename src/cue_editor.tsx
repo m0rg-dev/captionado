@@ -1,5 +1,5 @@
 import * as React from "react";
-import WaveSurfer from "wavesurfer.js/dist/wavesurfer";
+import WaveSurfer from "wavesurfer.js";
 import RegionsPlugin, { Region, RegionParams } from "wavesurfer.js/src/plugin/regions";
 import { TimeInfo } from "./app";
 
@@ -146,7 +146,7 @@ export default function CueEditor(props: { time: TimeInfo, cues: CueSet, audio: 
     } else {
       setEditState({ "state": "no_cue" });
     }
-  });
+  }, [current_cue]);
 
   if (!current_cue) {
     return (
