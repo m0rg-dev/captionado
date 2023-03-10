@@ -308,6 +308,9 @@ describe('Cue methods', () => {
     const original = new Cue("foo", 0, 1, ["bar"]);
     const copy = original.clone();
     expect(copy).toEqual(original);
+
+    copy.endTime += 1;
+    expect(copy).not.toEqual(original);
   });
 
   test("cue text reassembly", () => {
@@ -351,5 +354,100 @@ describe('Cue methods', () => {
     expect(cue.indexForTime(0.5)).toEqual(1);
     expect(cue.indexForTime(1)).toEqual(2);
     expect(cue.indexForTime(2)).toBeUndefined();
+  })
+});
+
+describe('CueSet methods', () => {
+  test('clone', () => {
+    const set = new CueSet();
+    set.addCue(new Cue("foo", 0, 1, ["bar"]));
+
+    const copy = set.clone();
+    expect(copy.cues).toEqual(set.cues);
+
+    copy.addCue(new Cue("baz", 1, 2, ["qux"]));
+    // shouldn't affect the original
+    expect(set.cues).toHaveLength(1);
+
+    const copy2 = set.clone();
+    copy2.cues.map((cue) => cue.startTime += 1);
+
+    // also shouldn't affect the original
+    expect(set.getCueAt(0)).toEqual(new Cue("foo", 0, 1, ["bar"]));
+  });
+
+  test('previousStart', () => {
+    const set = new CueSet();
+
+    set.addCue(new Cue("foo", 0, 1, ["bar"]));
+    set.addCue(new Cue("baz", 1, 2, ["qux"]));
+
+    expect(set.previousStart(0.5)).toEqual(0);
+    expect(set.previousStart(1.5)).toEqual(1);
+    expect(set.previousStart(2.5)).toEqual(1);
+
+    expect(set.previousStart(0)).toEqual(0);
+    expect(set.previousStart(1)).toEqual(0);
+
+    expect(set.previousStart(-1)).toEqual(-1);
+
+  });
+
+  test('nextEnd', () => {
+    const set = new CueSet();
+
+    set.addCue(new Cue("foo", 0, 1, ["bar"]));
+    set.addCue(new Cue("baz", 1, 2, ["qux"]));
+
+    expect(set.nextEnd(-0.5)).toEqual(1);
+    expect(set.nextEnd(0.5)).toEqual(1);
+    expect(set.nextEnd(1.5)).toEqual(2);
+
+    expect(set.nextEnd(0)).toEqual(1);
+    expect(set.nextEnd(1)).toEqual(2);
+    expect(set.nextEnd(2)).toEqual(2);
+
+    expect(set.nextEnd(3)).toEqual(3);
+  });
+
+  test('previousCue', () => {
+    const set = new CueSet();
+    const c0 = new Cue("foo", 0, 1, ["bar"]);
+    const c1 = new Cue("baz", 1, 2, ["qux"]);
+
+    set.addCue(c0);
+    set.addCue(c1);
+
+    expect(set.previousCue("foo")).toBeUndefined();
+    expect(set.previousCue("baz")).toBe(c0);
+  });
+
+  test('nextCue', () => {
+    const set = new CueSet();
+    const c0 = new Cue("foo", 0, 1, ["bar"]);
+    const c1 = new Cue("baz", 1, 2, ["qux"]);
+
+    set.addCue(c0);
+    set.addCue(c1);
+
+    expect(set.nextCue("foo")).toBe(c1);
+    expect(set.nextCue("baz")).toBeUndefined();
+  });
+
+  test('export', () => {
+    const set = new CueSet();
+
+    set.addCue(new Cue("foo", 0, 1, ["bar"]));
+    set.addCue(new Cue("baz", 1, 2, ["qux"]));
+
+    expect(set.export()).toEqual([
+      "WEBVTT",
+      "",
+      "00:00:00.000 --> 00:00:01.000",
+      "bar",
+      "",
+      "00:00:01.000 --> 00:00:02.000",
+      "qux",
+    ].join("\n"));
   })
 });

@@ -123,18 +123,12 @@ export class Cue {
 }
 
 export class CueSet {
-  cues: Cue[];
+  readonly cues: Cue[];
   id: string;
 
   public constructor() {
     this.cues = [];
     this.id = uuidv4();
-  }
-
-  public shallowCopy(): CueSet {
-    const rc = new CueSet();
-    rc.cues = this.cues;
-    return rc;
   }
 
   public clone(): CueSet {
@@ -147,11 +141,8 @@ export class CueSet {
   }
 
   public addCue(cue: Cue) {
+    // TODO verify this.cues is still in-order and non-overlapping
     this.cues.push(cue);
-  }
-
-  public getCues(): readonly Cue[] {
-    return this.cues;
   }
 
   public getCueAt(time: number): Cue | undefined {
@@ -365,6 +356,14 @@ export class CueSet {
   public previousStart(time: number): number {
     const current_cue = this.getCueAt(time);
     if (current_cue === undefined) {
+      // well, that doesn't have to stop us
+      const cuesRev = [...this.cues];
+      cuesRev.reverse();
+
+      const previous_cue = cuesRev.find((cue) => cue.startTime <= time);
+      if (previous_cue) {
+        return previous_cue.startTime;
+      }
       return time;
     }
 
@@ -373,9 +372,9 @@ export class CueSet {
     }
 
     const cue_index = this.cues.findIndex((cue) => cue.id == current_cue.id);
-    const previousCue = this.cues[cue_index - 1];
-    if (previousCue) {
-      return previousCue.startTime;
+    const previous_cue = this.cues[cue_index - 1];
+    if (previous_cue) {
+      return previous_cue.startTime;
     }
 
     return time;
@@ -384,20 +383,17 @@ export class CueSet {
   public nextEnd(time: number): number {
     const current_cue = this.getCueAt(time);
     if (current_cue === undefined) {
+      const next_cue = this.cues.find((cue) => cue.endTime > time);
+      if (next_cue) {
+        return next_cue.endTime;
+      }
+
       return time;
     }
 
-    if (time != current_cue.endTime) {
-      return current_cue.endTime;
-    }
-
-    const cue_index = this.cues.findIndex((cue) => cue.id == current_cue.id);
-    const previousCue = this.cues[cue_index + 1];
-    if (previousCue) {
-      return previousCue.endTime;
-    }
-
-    return time;
+    // because end time is exclusive, we can't ever be called with
+    // current_cue.endTime like is possible with previousStart.
+    return current_cue.endTime;
   }
 
   public previousCue(id: string): Cue | undefined {

@@ -115,7 +115,7 @@ function CueList(props: { time: number, cues: CueSet, onTimeUpdate: (time: numbe
       <th>cps</th>
       <th>content</th>
     </tr>
-    {props.cues?.getCues().map((cue) => <CueElement key={cue.id} cue={cue} time={props.time} onTimeUpdate={(time) => props.onTimeUpdate(cue.startTime + time)} onEdit={props.onEdit} />)}
+    {props.cues?.cues.map((cue) => <CueElement key={cue.id} cue={cue} time={props.time} onTimeUpdate={(time) => props.onTimeUpdate(cue.startTime + time)} onEdit={props.onEdit} />)}
   </table>;
 }
 
