@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { vtt_timestamp } from './utils';
+import { vttTimestamp } from './utils';
 
 const REFLOW_MIN_SENTENCE_LENGTH = 5;
 
@@ -420,7 +420,7 @@ export class CueSet {
     const chunks = ["WEBVTT"];
 
     for (const cue of this.cues) {
-      chunks.push(`${vtt_timestamp(cue.startTime)} --> ${vtt_timestamp(cue.endTime)}\n${cue.words.join(" ")}`);
+      chunks.push(`${vttTimestamp(cue.startTime)} --> ${vttTimestamp(cue.endTime)}\n${cue.words.join(" ")}`);
     }
 
     return chunks.join("\n\n");

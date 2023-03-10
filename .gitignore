@@ -1,5 +1,6 @@
 node_modules
 dist
+coverage
 
 test.mp4
 test.mp4.vtt
