@@ -76,6 +76,19 @@ Editing:
 - `Space` jumps to the edit box.
 - While in the edit box, `Escape` returns to the normal playback/edit controls.
 
+## Build Locally
+
+Normal webpack / npm stuff:
+
+```
+$ npm install
+$ npm run build
+  [load dist/index.html in your favorite web browser]
+```
+
+Other NPM scripts include `test` and `lint`. GitHub Actions will run them if you
+don't, so make sure your code passes both if you submit a PR.
+
 ## FAQ
 
 - Why does the interface look horrible?  
