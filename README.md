@@ -1,5 +1,12 @@
 # captionado - caption retiming power tool
 
+## Demo
+
+
+https://user-images.githubusercontent.com/38578268/224211879-e13193b6-5869-4024-a604-75c88f096da0.mov
+
+Demo footage from [Cathode Ray Dude](https://www.youtube.com/watch?v=dIKZCQnplDA), CC-BY 4.0.
+
 ## Introduction
 
 `captionado` is a closed-caption / subtitle editor that's designed for modifying
