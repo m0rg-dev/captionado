@@ -52,6 +52,7 @@ export default function App() {
   const [audio, setAudio] = React.useState<string>();
   const [time, setTime] = React.useState<TimeInfo>({ current: 0.0, maximum: 0.0 });
   const [history, setHistory] = React.useState(new History([new CueSet()], 0));
+  const [savedPosition, setSavedPosition] = React.useState(0);
 
   const current_cue = history.tip().getCueAt(time.current);
 
@@ -156,6 +157,7 @@ export default function App() {
     document.body.appendChild(elem);
     elem.click();
     document.body.removeChild(elem);
+    setSavedPosition(history.position);
   }
 
   function reflow() {
@@ -287,16 +289,16 @@ export default function App() {
 
       // editing (move endpoints)
       case "q":
-        keyboardMove("start", "earlier", e.shiftKey ? "nudge" : "word");
+        keyboardMove("start", "earlier", e.shiftKey ? "word" : "nudge");
         break;
       case "a":
-        keyboardMove("start", "later", e.shiftKey ? "nudge" : "word");
+        keyboardMove("start", "later", e.shiftKey ? "word" : "nudge");
         break;
       case "e":
-        keyboardMove("end", "earlier", e.shiftKey ? "nudge" : "word");
+        keyboardMove("end", "earlier", e.shiftKey ? "word" : "nudge");
         break;
       case "d":
-        keyboardMove("end", "later", e.shiftKey ? "nudge" : "word");
+        keyboardMove("end", "later", e.shiftKey ? "word" : "nudge");
         break;
 
       // editing (enter textbox)
@@ -315,11 +317,22 @@ export default function App() {
     }
   }
 
+  function beforeUnloadListener(e: BeforeUnloadEvent) {
+    e.preventDefault();
+    return e.returnValue = '';
+  }
+
   React.useEffect(() => {
-    document.addEventListener('keydown', handleKeypress);
+    window.addEventListener('keydown', handleKeypress);
+    if (history.position == savedPosition) {
+      window.removeEventListener('beforeunload', beforeUnloadListener, { capture: true });
+    } else {
+      window.addEventListener('beforeunload', beforeUnloadListener, { capture: true });
+    }
 
     return () => {
-      document.removeEventListener('keydown', handleKeypress);
+      window.removeEventListener('keydown', handleKeypress);
+      window.removeEventListener('beforeunload', beforeUnloadListener, { capture: true });
     };
   });
 
