@@ -38,7 +38,7 @@ test('cue text contents displayed where appropriate', () => {
   const onEdit = jest.fn();
   const onTimeUpdate = jest.fn();
 
-  let time = {
+  const time = {
     current: 0.5,
     maximum: 5
   };
@@ -92,7 +92,7 @@ test('edit lock flow', async () => {
   }
   const onTimeUpdate = jest.fn();
 
-  let time = {
+  const time = {
     current: 0.5,
     maximum: 5
   };
