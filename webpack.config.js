@@ -20,7 +20,7 @@ module.exports = {
   },
   plugins: [
     new HtmlWebpackPlugin({
-      title: 'Subtitle Editor',
+      title: 'captionado',
     }),
   ],
   resolve: {
