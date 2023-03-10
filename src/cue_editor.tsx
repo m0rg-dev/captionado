@@ -1,5 +1,5 @@
 import * as React from "react";
-import WaveSurfer from "wavesurfer.js/dist/wavesurfer";
+import WaveSurfer from "wavesurfer.js";
 import RegionsPlugin, { Region, RegionParams } from "wavesurfer.js/src/plugin/regions";
 import { TimeInfo } from "./app";
 
@@ -26,6 +26,9 @@ type WaveformState = {
   "state": "loaded"
 };
 
+// TODO set things up so I can mock / otherwise test wavesurfer.js
+// until then we're going to leave it alone
+/* c8 ignore start */
 function Waveform(props: { url: string | undefined, cues: CueSet, time: TimeInfo, onEdit: (edit: EditEvent) => void, onTimeUpdate: (time: TimeInfo) => void }) {
   const waveformRef = React.useRef<HTMLDivElement>(null);
   const wavesurferRef = React.useRef<WaveSurfer>();
@@ -123,6 +126,7 @@ function Waveform(props: { url: string | undefined, cues: CueSet, time: TimeInfo
   </>
   )
 }
+/* c8 ignore stop */
 
 export default function CueEditor(props: { time: TimeInfo, cues: CueSet, audio: string | undefined, onEdit: (edit: EditEvent) => void, onTimeUpdate: (time: TimeInfo) => void }) {
   const [editState, setEditState] = React.useState<EditState>({ "state": "no_cue" });
@@ -131,8 +135,8 @@ export default function CueEditor(props: { time: TimeInfo, cues: CueSet, audio: 
 
   function updateContents(e: React.ChangeEvent<HTMLTextAreaElement>) {
     if (current_cue !== undefined) {
-      props.onEdit({ type: "set_contents", id: current_cue.id, contents: e.target.value.split(/\s+/) });
-      setEditState({ "state": "editing", "cue_id": current_cue.id, "text": e.target.value.trim() });
+      props.onEdit({ type: "set_contents", id: current_cue.id, contents: e.target.value.trim().split(/\s+/) });
+      setEditState({ "state": "editing", "cue_id": current_cue.id, "text": e.target.value });
     }
   }
 
@@ -146,11 +150,11 @@ export default function CueEditor(props: { time: TimeInfo, cues: CueSet, audio: 
     } else {
       setEditState({ "state": "no_cue" });
     }
-  });
+  }, [current_cue]);
 
   if (!current_cue) {
     return (
-      <div id="cue-editor">
+      <div id="cue-editor" aria-label="cue editor">
         [no cue selected]<br />
       </div>
     );
@@ -167,13 +171,13 @@ export default function CueEditor(props: { time: TimeInfo, cues: CueSet, audio: 
       break;
     case "no_cue":
       return (
-        <div id="cue-editor">
+        <div id="cue-editor" aria-label="cue editor">
           [no cue selected]<br />
         </div>
       );
   }
 
-  return (<div id="cue-editor">
+  return (<div id="cue-editor" aria-label="cue editor">
     <div>
       Timing: {vttTimestamp(current_cue.startTime)} --&gt; {vttTimestamp(current_cue.endTime)}<br />
       Contents:<br />
