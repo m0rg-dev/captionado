@@ -4,7 +4,6 @@
 
 ## Demo
 
-
 https://user-images.githubusercontent.com/38578268/224211879-e13193b6-5869-4024-a604-75c88f096da0.mov
 
 Demo footage from [Cathode Ray Dude](https://www.youtube.com/watch?v=dIKZCQnplDA), CC-BY 4.0.
@@ -75,6 +74,16 @@ Editing:
 - `Z` and `C` join the cue with the previous or next cue.
 - `Space` jumps to the edit box.
 - While in the edit box, `Escape` returns to the normal playback/edit controls.
+
+## Offline Download
+
+`captionado` doesn't require an Internet connection to run, so you can grab a copy for yourself and keep it around. It should run on any computer with a recent web browser installed - if in doubt, try loading the [web version](https://m0rg-dev.github.io/captionado/) first. If that works, the offline copy will work as well.
+
+First, download the offline version [here](https://m0rg-dev.github.io/captionado/captionado.zip).
+
+Once you extract the `.zip` (exact procedure depends on browser, OS, and settings - it may happen automatically, or you may need to double-click it), open the file called `index.html` in the created `captionado` folder.
+
+You can, of course, also copy `captionado.zip` to a different computer before extracting it or copy the `captionado` folder to a different computer before running it.
 
 ## Build Locally
 
